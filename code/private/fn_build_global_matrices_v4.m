@@ -136,6 +136,7 @@ for t = 1:numel(un_typs)
             else
                 rho = matls(un_mat(m)).rho;
             end
+            rayleigh_damping_coefs = matls(un_mat(m)).rayleigh_damping_coefs;
         else
             D = 0; %For elements with no material e.g. interface
             rho = 0;
@@ -150,7 +151,7 @@ for t = 1:numel(un_typs)
         
 
         %Get the element stiffness and mass matrices
-        [el_K, el_C, el_M, loc_nd, loc_df] = fn_el_mats(nds, els(el_i2, :), D, rho, fe_options.dof_to_use);
+        [el_K, el_C, el_M, loc_nd, loc_df] = fn_el_mats(nds, els(el_i2, :), D, rho, rayleigh_damping_coefs, fe_options.dof_to_use);
 
         % %convert loc_df into indices starting at 1 (necessary to avoid
         % %wasting tons of space when dealing with acoustic elements with the
