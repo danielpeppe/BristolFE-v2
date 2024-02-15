@@ -6,30 +6,48 @@ addpath('../code');
 %% Key modelling parameters
 
 %Elements per wavelength (higher = more accurate and higher computational cost)
-els_per_wavelength = 6;
+els_per_wavelength = 50;
 
 %% Define materials
 
-%Material properties
-steel_matl_i = 1;
-matls(1).rho = 8900; %Density
-%3x3 or 6x6 stiffness matrix of material. Here it is isotropic material and
-%fn_isotropic_plane_strain_stiffness_matrix(E, v) converts Young's modulus
-%and Poisson's ratio into appropriate 3x3 matrix
-matls(1).D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3);
+ply_0_matl_i = 1;
+ply_orientation = 0; %rotation of ply (0 or 90)
+E_fib = 163e+9; %[GPa]
+G_fib = 5e+9;
+v_fib = 0.32;
+E_t = 12e+9;
+G_t = 3.98e+9;
+v_t = 0.024;
+matls(1).rho = 1570; %Density
+matls(1).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation,E_fib,G_fib,v_fib,E_t,G_t,v_t);
 matls(1).rayleigh_damping_coefs = [0 0]; %[alpha beta]
 matls(1).col = hsv2rgb([2/3,0,0.80]); %Colour for display
-matls(1).name = 'Steel';
+matls(1).name = 'Composite Ply Layer (0 deg)';
 matls(1).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 
-water_matl_i = 2;
-matls(water_matl_i).rho = 1000;
+ply_90_matl_i = 2;
+ply_orientation = 90; %rotation of ply (0 or 90)
+E_fib = 163e+9; %[GPa]
+G_fib = 5e+9;
+v_fib = 0.32;
+E_t = 12e+9;
+G_t = 3.98e+9;
+v_t = 0.024;
+matls(2).rho = 1570; %Density
+matls(2).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation,E_fib,G_fib,v_fib,E_t,G_t,v_t);
+matls(2).rayleigh_damping_coefs = [0 0]; %[alpha beta]
+matls(2).col = hsv2rgb([1/3,0,0.80]); %Colour for display
+matls(2).name = 'Composite Ply Layer (90 deg)';
+matls(2).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
+
+water_matl_i = 3;
+matls(3).rho = 1000;
 %For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
 %calcualted here from ultrasonic velocity (1500) and density (1000)
-matls(water_matl_i).D = 1500 ^ 2 * 1000;
-matls(water_matl_i).col = hsv2rgb([0.6,0.5,0.8]);
-matls(water_matl_i).name = 'Water'; 
-matls(water_matl_i).el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
+matls(3).D = 1500 ^ 2 * 1000;
+matls(3).col = hsv2rgb([0.6,0.5,0.8]);
+matls(3).name = 'Water'; 
+matls(3).el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
 
 
 %% Define shape of model
@@ -90,6 +108,10 @@ el_size = fn_get_suitable_el_size(matls, centre_freq, els_per_wavelength);
 
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(bdry_pts, el_size);
+
+%% Set ply materials
+
+mod = fn_set_ply_material(mod,matls,ply_0_matl_i,ply_90_matl_i);
 
 %% Add porosity (WIP)
 
