@@ -136,7 +136,15 @@ for t = 1:numel(un_typs)
             else
                 rho = matls(un_mat(m)).rho;
             end
-            rayleigh_damping_coefs = matls(un_mat(m)).rayleigh_damping_coefs;
+            %Rayleigh Damping
+            if isfield(matls(un_mat(m)), 'rayleigh_damping_coefs')
+                rayleigh_damping_coefs = matls(un_mat(m)).rayleigh_damping_coefs;
+                if isempty(rayleigh_damping_coefs)
+                    rayleigh_damping_coefs = [0 0];
+                end
+            else
+                rayleigh_damping_coefs = [0 0];
+            end
         else
             D = 0; %For elements with no material e.g. interface
             rho = 0;
