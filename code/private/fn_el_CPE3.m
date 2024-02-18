@@ -37,7 +37,7 @@ end
 if isempty(nds) || isempty(els) || isempty(D) || isempty(rho)
 	el_K = [];
 	el_M = [];
-el_C = [];
+    el_C = [];
 	el_Q = [];
 	[loc_nd, loc_df] = fn_remove_dofs_from_el_matrices(loc_nd, loc_df, dofs_to_use);
 	return
@@ -155,7 +155,6 @@ el_M(:, 9, 9) = (J .* rho) ./ 6;
 %Damping matrix (Rayleigh)
 alpha = rayleigh_damping_coefs(1);
 beta = rayleigh_damping_coefs(2);
-
 el_C = zeros(size(els, 1), 9, 9);
 el_C(:, 1, 1) = alpha*el_M(:, 1, 1) + beta*el_K(:, 1, 1);
 el_C(:, 2, 2) = alpha*el_M(:, 2, 2) + beta*el_K(:, 2, 2);

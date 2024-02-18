@@ -2,7 +2,14 @@ function mod = fn_set_ply_material(mod,ply_0_matl_i,ply_90_matl_i)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
-%% function increases size of mod.el_mat_i by 8009
+
+%PROBLEMS:
+%   1. size of element1a cannot be used because fn_isometric_structured_mesh
+%      changes size of elements (and changes element numbers that are left
+%      fairly arbitrarily.
+%   2. mesh includes water, so number of elements in water must be
+%      considered.
+%   3. much easier to draw rectangle around elements.
 
 % nodes_in_x_dir = mod.nds_in_x;
 % nodes_in_y_dir = mod.nds_in_y;
