@@ -56,6 +56,8 @@ element_node3d = node_numbers(3:2:end, 1:end-1);
 
 %Final m x 2 matrix of x and y coordinates for each node
 mod.nds = [node_x_positions(:), node_y_positions(:)];
+%Save element height for use in assigning composite material layers later
+mod.el_height = mod.nds(2,2) - mod.nds(1,2);
 %Final n x 3 matrix of 3 node numbers for each element
 mod.els = [
     element_node1a(:), element_node2a(:), element_node3a(:)
@@ -74,4 +76,5 @@ mod.els(out, :) = [];
 %Associate each element with a material index = 1
 n_els = size(mod.els, 1);
 mod.el_mat_i = ones(n_els, 1);
+
 end
