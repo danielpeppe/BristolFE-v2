@@ -122,6 +122,7 @@ end
 %Main time marching loop
 t1 = clock;
 ti_start = inf;
+progressbar_checkpoint = round(length(time)/10);
 if ~isempty(forcing_indices)
     ti_start = min(min(find(sum(forcing_functions))), ti_start);
 end
@@ -171,8 +172,8 @@ for ti = ti_start:length(time)
     u_dot_previous = u_dot;
     
     %Show how far through calculation is
-    if rem(ti,100) == 0
-        fn_simple_text_progress_bar(ti, length(time));
+    if rem(ti,progressbar_checkpoint) == 0
+        fprintf('.')
     end
 end
 if use_gpu
