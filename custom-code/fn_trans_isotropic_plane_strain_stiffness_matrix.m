@@ -24,8 +24,9 @@ if ~(ply_orientation == 0 || ply_orientation == 90)
     error("orientations not equal to 0 or 90 are not supported")
 end
 
+% start with 6x6 compliance matrix
 if ply_orientation == 0
-    % start with 6x6 compliance matrix
+    %0 degrees = fibres along z_axis
     compliance_matrix = [1/E_t,         -v_t/E_t,       -v_fib/E_fib, 0, 0, 0
                          -v_t/E_t,      1/E_t,          -v_fib/E_fib, 0, 0, 0
                          -v_fib/E_fib,  -v_fib/E_fib,   1/E_fib,      0, 0, 0
@@ -34,6 +35,7 @@ if ply_orientation == 0
                          0,             0,              0,            0, 0, 1/(2*G_t)];
 
 elseif ply_orientation == 90
+    %0 degrees = fibres along x_axis
     compliance_matrix = [1/E_fib,       -v_fib/E_fib,   -v_fib/E_fib, 0, 0, 0
                          -v_fib/E_fib,  1/E_t,          -v_t/E_t,     0, 0, 0
                          -v_fib/E_fib,  -v_t/E_t,       1/E_t,        0, 0, 0
