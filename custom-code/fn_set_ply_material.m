@@ -1,4 +1,4 @@
-function [mod top_of_specimen] = fn_set_ply_material(mod,ply_0_matl_i,ply_90_matl_i,specimen_brdy_pts)
+function [mod, top_of_specimen] = fn_set_ply_material(mod, matl_1, matl_2, specimen_brdy_pts, n_layers, n_plys_per_type)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -23,18 +23,22 @@ safety_margin_x = specimen_width * safety_margin_perc;
 %Assign materials
 matl_oscillator = 1;
 height_completed = specimen_height_from_bottom;
-n_plys_per_type = 4;
+if rem(n_layers,2)
+    error("n_layers must be even")
+end
 %Loop over ply types
-for ply_type = 1:32/n_plys_per_type
+for ply_type = 1:n_layers/n_plys_per_type
     %This changes ply material when needed
     if matl_oscillator > 0
-        matl_i = ply_0_matl_i;
+        %first material
+        matl_i = matl_1;
     else
-        matl_i = ply_90_matl_i;
+        %second material
+        matl_i = matl_2;
     end
     %Loop over layers in stack
     for layer_in_type = 1:n_plys_per_type
-        target_layer = (ply_type - 1)*4 + layer_in_type;
+        target_layer = (ply_type - 1)*n_plys_per_type + layer_in_type;
         %Stay close to true ply layer height using upper and lower heights
         true_height = specimen_height_from_bottom + (target_layer - 1)*ply_height;
         if height_completed > true_height
@@ -66,7 +70,7 @@ for ply_type = 1:32/n_plys_per_type
     %Flip material type after n_plys_per_type loops completed
     matl_oscillator = matl_oscillator*-1;
     %CFRP specimen is symmetric
-    if target_layer == 16
+    if target_layer == n_layers/2
         matl_oscillator = matl_oscillator*-1;
     end
 end
