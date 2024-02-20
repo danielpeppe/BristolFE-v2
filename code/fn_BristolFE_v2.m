@@ -73,12 +73,14 @@ for s = 1:numel(steps)
         %Explicit dynamic analysis - (2) run it!
         [res{s}.dsps, fld, res{s}.frcs, res{s}.fld_time] = fn_explicit_dynamic_solver_v5(mats.K, mats.C, mats.M, t, frc_gi, frcs, dsp_gi, dsps, hist_gi, fe_options.field_output_every_n_frames, fe_options.use_gpu_if_present);
         
+        disp('Converting field outputs')
         %Convert field output to element values
         if ~isempty(fld)
             res{s}.fld = fn_get_plot_vals_v3(fld, mats.gl_lookup, mod.els, mats.M);
         else
             res{s}.fld = [];
         end
+        disp("FE Analysis Complete")
         
     end
 end
