@@ -122,7 +122,7 @@ end
 %Main time marching loop
 t1 = clock;
 ti_start = inf;
-progressbar_checkpoint = round(length(time)/10);
+progressbar_checkpoint = floor(length(time)/10);
 fprintf('Percent complete: 00%')
 if ~isempty(forcing_indices)
     ti_start = min(min(find(sum(forcing_functions))), ti_start);
@@ -174,7 +174,7 @@ for ti = ti_start:length(time)
     
     %Show how far through calculation is
     if rem(ti,progressbar_checkpoint) == 0
-        percent_done = round(ti/progressbar_checkpoint)*10;
+        percent_done = round(ti/progressbar_checkpoint)*10; %Use ti-1 to avoid 100% completion
         fprintf(repmat('\b', 1, length(num2str(percent_done - 10)) + 1));
         fprintf('%d%%', percent_done);
     end
@@ -193,7 +193,6 @@ if use_gpu
 end
 
 t2 = etime(clock, t1);
-fprintf(repmat('\b', 1, 3));
-fprintf('100%% completed in %.2f secs\n', t2);
+fprintf(' completed in %.2f secs\n', t2);
 
 end
