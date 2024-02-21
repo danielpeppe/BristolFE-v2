@@ -123,6 +123,7 @@ end
 t1 = clock;
 ti_start = inf;
 progressbar_checkpoint = round(length(time)/10);
+fprintf('Percent complete: 00%')
 if ~isempty(forcing_indices)
     ti_start = min(min(find(sum(forcing_functions))), ti_start);
 end
@@ -173,7 +174,9 @@ for ti = ti_start:length(time)
     
     %Show how far through calculation is
     if rem(ti,progressbar_checkpoint) == 0
-        fprintf('.')
+        percent_done = round(ti/progressbar_checkpoint)*10;
+        fprintf(repmat('\b', 1, length(num2str(percent_done - 10)) + 1));
+        fprintf('%d%%', percent_done);
     end
 end
 if use_gpu
@@ -190,6 +193,7 @@ if use_gpu
 end
 
 t2 = etime(clock, t1);
-fprintf('completed in %.2f secs\n', t2);
+fprintf(repmat('\b', 1, 3));
+fprintf('100%% completed in %.2f secs\n', t2);
 
 end
