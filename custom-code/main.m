@@ -5,35 +5,33 @@ addpath('../code');
 
 %% KEY MODELLING PARAMETERS
 
-%Simulation Resolution --------------------------------------
-els_per_wavelength = 10; %10 is default (increases are non-linear)
-time_step_safety_factor = 12; %3 is default
-%Simulation Parameters --------------------------------------
-%Specimen size and absorbing boundary + water regions as percent of specimen size
+%Resolution
+els_per_wavelength = 5; %10 is default (increases are non-linear)
+time_step_safety_factor = 3; %3 is default
+%Specimen size and absorbing boundary
 specimen_size = 4e-3; %[mm]
 abs_bdry_thickness_perc = 0.1; %0.1 is default (relative to water_boundary_size)
-water_bdry_thickness_perc = 0.2; %0.2 is default (>abs_bdry_thickness_perc)
 %Material indices (Ply Material layers = 1 and 2) (indices cannot be skipped)
 ply90_matl_i = 1;
 ply0_matl_i = 2;
 water_matl_i = 3;
 steel_matl_i = 4; %DEBUGGING
-%FEA options
-field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
-use_gpu_if_present = 1;
-%Switches ---------------------------------------------------
 %Location of transducer
 sw.water_interface_single = 0; %0 is default (1 separates transducer from specimen by 1 element)
-sw.water_interface = 0.1; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+sw.water_interface = 0; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+water_bdry_thickness_perc = 0; %0.2 is default (>abs_bdry_thickness_perc)
 %Input
 sw.steel_and_water = 0;
 sw.plys_and_water = 1;
+%FEA options
+field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
+use_gpu_if_present = 1;
 %Output
 sw.geometry = 0;
 sw.plot_exp_data = 1;
 sw.run_fea = 1;
 sw.animate = 1;
-% -----------------------------------------------------------
+% ------------------------------------------------
 
 %% CALCULATE MORE PARAMETERS
 
@@ -272,7 +270,7 @@ if sw.animate
     display_options.node_sets_to_plot(1).col = 'r.';
     h_patch = fn_show_geometry(mod, matls, display_options);
     anim_options.repeat_n_times = 1;
-    anim_options.norm_val = 1e+03;
+    anim_options.norm_val = 0.5e+03;
     fn_run_animation(h_patch, res{1}.fld, anim_options);
 end
 
