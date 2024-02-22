@@ -80,7 +80,7 @@ for s = 1:numel(steps)
         else
             res{s}.fld = [];
         end
-        fprintf("complete")
+        fprintf("complete\n")
         
     end
 end

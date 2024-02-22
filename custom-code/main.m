@@ -5,52 +5,63 @@ addpath('../code');
 
 %% KEY MODELLING PARAMETERS
 
-%Simulation Resolution
-% --------------------------------------
-%Elements per wavelength
+%Simulation Resolution --------------------------------------
 els_per_wavelength = 10; %10 is default (increases are non-linear)
-time_step_safety_factor = 5; %3 is default
-% --------------------------------------
-
-%Location of transducer
-water_interface_single = 0; %0 is default (1 separates transducer from specimen by 1 element)
-water_interface = 0; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+time_step_safety_factor = 12; %3 is default
+%Simulation Parameters --------------------------------------
 %Specimen size and absorbing boundary + water regions as percent of specimen size
 specimen_size = 4e-3; %[mm]
-abs_bdry_thickness_perc = 0.1; %0.1 is default (minimum boundary to avoid reflections)
+abs_bdry_thickness_perc = 0.1; %0.1 is default (relative to water_boundary_size)
 water_bdry_thickness_perc = 0.2; %0.2 is default (>abs_bdry_thickness_perc)
 %Material indices (Ply Material layers = 1 and 2) (indices cannot be skipped)
 ply90_matl_i = 1;
 ply0_matl_i = 2;
 water_matl_i = 3;
 steel_matl_i = 4; %DEBUGGING
-%Input
-steel_and_water = 0;
-plys_and_water = 1;
-%FEA
+%FEA options
 field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
 use_gpu_if_present = 1;
+%Switches ---------------------------------------------------
+%Location of transducer
+sw.water_interface_single = 0; %0 is default (1 separates transducer from specimen by 1 element)
+sw.water_interface = 0.1; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+%Input
+sw.steel_and_water = 0;
+sw.plys_and_water = 1;
 %Output
-geometry = 0;
-run_fea = 1;
-animate = 1;
+sw.geometry = 0;
+sw.plot_exp_data = 1;
+sw.run_fea = 1;
+sw.animate = 1;
+% -----------------------------------------------------------
+
+%% CALCULATE MORE PARAMETERS
+
+if sw.water_interface && sw.water_interface_single
+    error('Choose either sw.water_interface OR sw.water_interface_single (not both)')
+elseif sw.water_interface || sw.water_interface_single
+    sw.water_present = 1;
+else
+    sw.water_present = 0;
+end
 
 %% DEFINE MATERIAL
 
 %Steel (FOR DEBUGGING)
 matls(steel_matl_i).rho = 8900;
 matls(steel_matl_i).D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
-matls(steel_matl_i).col = hsv2rgb([2/3,0.5,0.8]);
+matls(steel_matl_i).col = hsv2rgb([3/4,0.5,0.80]);
 matls(steel_matl_i).name = 'Steel';
 matls(steel_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 
 %Ply Material properties
-E_fib = 163e+9; %[GPa]
-G_fib = 5e+9;
+E_fib = 163e+09; %[GPa]
+G_fib = 5e+09;
 v_fib = 0.32;
-E_t = 12e+9;
-G_t = 3.98e+9;
+E_t = 12e+09;
+G_t = 3.98e+09;
 v_t = 0.024;
+%v_t = 0.4;
 ply_rho = 1570; %[kg/m3]
 
 %Plys at 0 degrees orientation (along z-axis)
@@ -95,42 +106,44 @@ matls(water_matl_i).el_typ = 'AC2D3'; %AC2D3 must be the element type for a flui
 %Define model parameters
 water_brdy_thickness = water_bdry_thickness_perc*specimen_size;
 model_size_w = specimen_size;
-model_size_h = specimen_size + 2*water_brdy_thickness;
+if sw.water_present
+    model_size_h = specimen_size + 2*water_brdy_thickness;
+else
+    model_size_h = specimen_size + water_brdy_thickness;
+end
 abs_bdry_thickness = abs_bdry_thickness_perc*specimen_size;
 
 %Define size of model
 bdry_pts = [
-    0, 0 
+    0,            0 
     model_size_w, 0
     model_size_w, model_size_h
-    0, model_size_h
-    ];
+    0,            model_size_h];
 
 %Define specimen size that will be water (water surrounds specimen)
 wbt = water_brdy_thickness; %tmp for readability
 specimen_brdy_pts = [
-    0, wbt
+    0,            wbt
     model_size_w, wbt
     model_size_w, wbt + specimen_size
-    0, wbt + specimen_size];
+    0,            wbt + specimen_size];
 %Define top of specimen for later use
 top_of_specimen = specimen_brdy_pts(3,2);
 
 %Define start of absorbing boundary region and its thickness
 abt = abs_bdry_thickness; %tmp for readability
 abs_bdry_pts = [
-    abt, wbt - abt
-    model_size_w - abt, wbt - abt
-    model_size_w - abt, model_size_h - (wbt - abt)
-    abt, model_size_h - (wbt - abt)];
-
+    abt,                abt
+    model_size_w - abt, abt
+    model_size_w - abt, model_size_h - sw.water_present*abt
+    abt,                model_size_h - sw.water_present*abt];
 
 %% DEFINE SIGNAL
 
 centre_freq = 5e6;
 no_cycles = 4;
 max_time = 10e-6;
-if water_interface || water_interface_single
+if sw.water_interface || sw.water_interface_single
     src_dir = 4; %direction of forces applied: 1 = x, 2 = y, 3 = z (for solids), 4 = volumetric expansion (for fluids)
 else
     src_dir = 2;
@@ -146,10 +159,10 @@ mod = fn_isometric_structured_mesh(bdry_pts, el_size);
 %% DEFINE MATERIALS AND POROSITY
 
 mod.el_mat_i(:) = water_matl_i;
-if steel_and_water
+if sw.steel_and_water
     mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, steel_matl_i);
 end
-if plys_and_water
+if sw.plys_and_water
     %Set ply materials (input 1 = layer 1, input 2 = layer 2)
     [mod, new_top_of_specimen] = fn_set_ply_material(mod, 1, 2, specimen_brdy_pts, 32, 4);
     %Redefine top of specimen
@@ -170,10 +183,10 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 %% DEFINE TRANSDUCER
 
 %Define a line along which sources will be placed to excite waves
-if water_interface_single
+if sw.water_interface_single
     src_offset = mod.el_height;
-elseif water_interface
-    src_offset = water_interface*wbt;
+elseif sw.water_interface
+    src_offset = sw.water_interface*wbt;
 else
     src_offset = 0;
     %src_offset = -0.5*model_size_h + wbt;
@@ -202,7 +215,7 @@ steps{1}.mon.dfs = steps{1}.load.frc_dfs;
 
 %% DISPLAY MODEL
 
-if geometry
+if sw.geometry
     figure; 
     display_options.interface_el_col = 'b';
     display_options.draw_elements = 0;
@@ -213,7 +226,7 @@ end
 
 %% RUN THE MODEL
 
-if run_fea
+if sw.run_fea
     %Define FE options
     fe_options.field_output_every_n_frames = field_output_every_n_frames;
     fe_options.use_gpu_if_present = use_gpu_if_present;
@@ -226,6 +239,8 @@ if run_fea
     fe_options.max_stiffness_reduction = 0.01;
     %Run model
     res = fn_BristolFE_v2(mod, matls, steps, fe_options);
+
+    fprintf('max dsp: %2f, average dsp: %2f\n',max(sum(res{1}.dsps)), mean(sum(res{1}.dsps)))
 end
 
 %% SHOW THE RESULTS
@@ -235,9 +250,21 @@ end
 figure;
 plot(steps{1}.load.time, sum(res{1}.dsps));
 xlabel('Time (s)')
+hold on
 
-%Animate result
-if animate
+if sw.plot_exp_data
+    load('g4-s8_x-8000_z0_025.mat');
+    aperture = 1:8;
+    i = ismember(exp_data.tx, aperture) & ismember(exp_data.rx,aperture);
+    time_data_i = sum(exp_data.time_data(:,i),2);
+    scale_dsp = max(sum(res{1}.dsps))/max(time_data_i);
+    translate_time = 1.194e-05;
+    plot(exp_data.time - translate_time, scale_dsp*time_data_i);
+end
+hold off
+
+%sw.animate result
+if sw.animate
     figure;
     display_options.interface_el_col = 'b';
     display_options.draw_elements = 0;
@@ -245,6 +272,7 @@ if animate
     display_options.node_sets_to_plot(1).col = 'r.';
     h_patch = fn_show_geometry(mod, matls, display_options);
     anim_options.repeat_n_times = 1;
+    anim_options.norm_val = 1e+03;
     fn_run_animation(h_patch, res{1}.fld, anim_options);
 end
 
