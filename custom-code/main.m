@@ -5,9 +5,14 @@ addpath('../code');
 
 %% KEY MODELLING PARAMETERS
 
+%%%%% Current Working Model
+%   1. upper_water_present = 0 - this ensures the instability at water
+%   boundary does not occure at transducer. Therefore, instablity
+%   'reaches' src later on in simulation
+
 %Resolution
-els_per_wavelength = 2; %10 is default (increases are non-linear)
-time_step_safety_factor = 3; %3 is default
+els_per_wavelength = 6; %10 is default (increases are non-linear)
+time_step_safety_factor = 6; %3 is default
 
 %Specimen size and absorbing boundary
 specimen_size = 4e-3; %[mm]
@@ -19,37 +24,44 @@ water_matl_i = 3;
 steel_matl_i = 4; %DEBUGGING
 
 %Location of transducer in water
-sw.upper_water_present = 0;
-sw.lower_water_present = 0;
+op.upper_water_present = 0;
+op.lower_water_present = 1;
 %Water boundary
-water_bdry_thickness_perc = 0; %0.2 is default (>abs_bdry_thickness_perc)
+water_bdry_thickness_perc = 0.2; %0.2 is default (>abs_bdry_thickness_perc)
 %Water interface
-sw.water_interface_perc = 0; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
-sw.water_interface_single = 0; %0 is default (1 separates transducer from specimen by 1 element)
+op.water_interface_perc = 0; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+op.water_interface_single = 0; %0 is default (1 separates transducer from specimen by 1 element)
 
 %Input
-sw.steel_and_water = 0;
-sw.plys_and_water = 1;
+op.steel_and_water = 0;
+op.plys_and_water = 1;
+%Signal
+max_time = 5e-6;
 %FEA options
 field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
 use_gpu_if_present = 1;
 %Output
-sw.geometry = 1;
-sw.plot_sim_data = 0;
-sw.plot_exp_data = 0;
-sw.run_fea = 0;
-sw.animate = 0;
+op.geometry = 0;
+op.run_fea = 1;
+op.plot_sim_data = 1;
+op.plot_exp_data = 1;
+op.animate = 1;
 
-%% CALCULATE MORE PARAMETERS (CHECK SWITCHES)
+%% CALCULATE MORE PARAMETERS (CHECK OPTIONS)
 
-if sw.water_interface_perc && sw.water_interface_single
-    error('Switch error: Choose either sw.water_interface_perc OR sw.water_interface_single (not both)')
-elseif xor(sw.water_interface_perc || sw.water_interface_single, sw.upper_water_present)
-    error('Switch error: set sw.water_interface_perc/single correctly')
-elseif (sw.lower_water_present || sw.upper_water_present) && ~water_bdry_thickness_perc
-    error('Switch error: set water_bdry_thickness_perc > 0')
-elseif (~sw.lower_water_present && ~sw.upper_water_present) && water_bdry_thickness_perc
-    error('Switch error: set water_bdry_thickness_perc = 0')
+%Water options
+if op.water_interface_perc && op.water_interface_single
+    error('Option Error: Choose either op.water_interface_perc OR op.water_interface_single (not both)')
+elseif xor(op.water_interface_perc || op.water_interface_single, op.upper_water_present)
+    error('Option Error: set op.water_interface_perc/single correctly')
+elseif (op.lower_water_present || op.upper_water_present) && ~water_bdry_thickness_perc
+    error('Option Error: set water_bdry_thickness_perc > 0')
+elseif (~op.lower_water_present && ~op.upper_water_present) && water_bdry_thickness_perc
+    error('Option Error: set water_bdry_thickness_perc = 0')
+end
+%Output options
+if (op.animate || op.plot_sim_data || op.plot_exp_data) && ~op.run_fea
+    error('Option Error: set run_fea = 1 for results')
 end
 
 %% DEFINE MATERIAL
@@ -113,7 +125,7 @@ matls(water_matl_i).el_typ = 'AC2D3'; %AC2D3 must be the element type for a flui
 %Define model parameters
 water_brdy_thickness = water_bdry_thickness_perc*specimen_size;
 model_size_w = specimen_size;
-model_size_h = specimen_size + water_brdy_thickness*(sw.upper_water_present + sw.lower_water_present);
+model_size_h = specimen_size + water_brdy_thickness*(op.upper_water_present + op.lower_water_present);
 abs_bdry_thickness = abs_bdry_thickness_perc*specimen_size;
 
 %Define size of model
@@ -126,27 +138,26 @@ bdry_pts = [
 %Define specimen size that will be water (water surrounds specimen)
 wbt = water_brdy_thickness; %tmp for readability
 specimen_brdy_pts = [
-    0,            wbt*sw.lower_water_present
-    model_size_w, wbt*sw.lower_water_present
-    model_size_w, wbt*(sw.upper_water_present + sw.lower_water_present) + specimen_size
-    0,            wbt*(sw.upper_water_present + sw.lower_water_present) + specimen_size];
+    0,            wbt*op.lower_water_present
+    model_size_w, wbt*op.lower_water_present
+    model_size_w, wbt*(op.upper_water_present + op.lower_water_present) + specimen_size
+    0,            wbt*(op.upper_water_present + op.lower_water_present) + specimen_size];
 %Define top of specimen for later use
 top_of_specimen = specimen_brdy_pts(3,2);
 
 %Define start of absorbing boundary region and its thickness
 abt = abs_bdry_thickness; %tmp for readability
 abs_bdry_pts = [
-    abt,                abt*sw.lower_water_present
-    model_size_w - abt, abt*sw.lower_water_present
-    model_size_w - abt, model_size_h - sw.upper_water_present*abt
-    abt,                model_size_h - sw.upper_water_present*abt];
+    abt,                abt*op.lower_water_present
+    model_size_w - abt, abt*op.lower_water_present
+    model_size_w - abt, model_size_h - op.upper_water_present*abt
+    abt,                model_size_h - op.upper_water_present*abt];
 
 %% DEFINE SIGNAL
 
 centre_freq = 5e6;
 no_cycles = 4;
-max_time = 10e-6;
-if sw.water_interface_perc || sw.water_interface_single
+if op.upper_water_present
     src_dir = 4; %direction of forces applied: 1 = x, 2 = y, 3 = z (for solids), 4 = volumetric expansion (for fluids)
 else
     src_dir = 2;
@@ -162,10 +173,10 @@ mod = fn_isometric_structured_mesh(bdry_pts, el_size);
 %% DEFINE MATERIALS AND POROSITY
 
 mod.el_mat_i(:) = water_matl_i;
-if sw.steel_and_water
+if op.steel_and_water
     mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, steel_matl_i);
 end
-if sw.plys_and_water
+if op.plys_and_water
     %Set ply materials (input 1 = layer 1, input 2 = layer 2)
     [mod, new_top_of_specimen] = fn_set_ply_material(mod, 1, 2, specimen_brdy_pts, 32, 4);
     %Redefine top of specimen
@@ -186,10 +197,10 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 %% DEFINE TRANSDUCER
 
 %Define a line along which sources will be placed to excite waves
-if sw.water_interface_single
+if op.water_interface_single
     src_offset = mod.el_height;
-elseif sw.water_interface_perc
-    src_offset = sw.water_interface_perc*wbt;
+elseif op.water_interface_perc
+    src_offset = op.water_interface_perc*wbt;
 else
     src_offset = 0;
     %src_offset = -0.5*model_size_h + wbt;
@@ -218,7 +229,7 @@ steps{1}.mon.dfs = steps{1}.load.frc_dfs;
 
 %% DISPLAY MODEL
 
-if sw.geometry
+if op.geometry
     figure; 
     display_options.interface_el_col = 'b';
     display_options.draw_elements = 0;
@@ -229,54 +240,55 @@ end
 
 %% RUN THE MODEL
 
-if sw.run_fea
+if op.run_fea
     %Define FE options
     fe_options.field_output_every_n_frames = field_output_every_n_frames;
     fe_options.use_gpu_if_present = use_gpu_if_present;
-    
     fe_options.dof_to_use = []; %Blank uses all of available ones for all elements, subset can be set e.g. as [1,2]
+
     %Following relate to how absorbing regions are created by adding damping
     %matrix and reducing stiffness matrix to try and preserve acoustic impedance
     fe_options.damping_power_law = 3;
     fe_options.max_damping = 3.1415e+07;
     fe_options.max_stiffness_reduction = 0.01;
+    
     %Run model
     res = fn_BristolFE_v2(mod, matls, steps, fe_options);
-
-    fprintf('max dsp: %2f, average dsp: %2f\n',max(sum(res{1}.dsps)), mean(sum(res{1}.dsps)))
+    res_sum_dsps = sum(res{1}.dsps); %save displacements in variable for readability
+    fprintf('max dsp: %e, average dsp: %e median dsp: %e\n',max(res_sum_dsps), mean(res_sum_dsps), median(res_sum_dsps))
 end
 
 %% SHOW THE RESULTS
 
-if sw.plot_sim_data
+if op.plot_sim_data
     %Show the history output as a function of time - here we just sum over all 
     %the nodes where displacments were recorded
     figure;
-    plot(steps{1}.load.time, sum(res{1}.dsps));
+    plot(steps{1}.load.time, res_sum_dsps);
     xlabel('Time (s)')
     hold on
-    
-    if sw.plot_exp_data
+    %Plot experimental data on top
+    if op.plot_exp_data
         load('g4-s8_x-8000_z0_025.mat');
         aperture = 1:8;
         i = ismember(exp_data.tx, aperture) & ismember(exp_data.rx,aperture);
         time_data_i = sum(exp_data.time_data(:,i),2);
-        scale_dsp = max(sum(res{1}.dsps))/max(time_data_i);
-        translate_time = 1.194e-05;
+        scale_dsp = max(res_sum_dsps)/max(time_data_i); %Scale exp response to match sim response
+        translate_time = 1.194e-05; %Start of exp response
         plot(exp_data.time - translate_time, scale_dsp*time_data_i);
     end
     hold off
 end
-%sw.animate result
-if sw.animate
+%op.animate result
+if op.animate
     figure;
     display_options.interface_el_col = 'b';
     display_options.draw_elements = 0;
     display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
     display_options.node_sets_to_plot(1).col = 'r.';
     h_patch = fn_show_geometry(mod, matls, display_options);
-    anim_options.repeat_n_times = 1;
-    anim_options.norm_val = 0.5e+03;
+    anim_options.repeat_n_times = 10;
+    anim_options.norm_val = median(res_sum_dsps);
     fn_run_animation(h_patch, res{1}.fld, anim_options);
 end
 
