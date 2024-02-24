@@ -9,7 +9,7 @@ hold on
 load('g4-s8_x-8000_z0_025.mat');
 %Define aperture
 aperture_n_els = 8; %number of elements
-aperture_vec = 1:aperture_n_els:128;
+aperture_vec = 1:aperture_n_els:exp_data.num_els;
 %Loop over apertures
 for i = 1:(numel(aperture_vec) - 1)
     %Get time data for aperture
