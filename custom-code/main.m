@@ -11,8 +11,8 @@ addpath('../code');
 %   'reaches' src later on in simulation
 
 %Resolution
-els_per_wavelength = 6; %10 is default (increases are non-linear)
-time_step_safety_factor = 6; %3 is default
+els_per_wavelength = 2; %10 is default (increases are non-linear)
+time_step_safety_factor = 3; %3 is default
 
 %Specimen size and absorbing boundary
 specimen_size = 4e-3; %[mm]
@@ -29,24 +29,34 @@ op.lower_water_present = 1;
 %Water boundary
 water_bdry_thickness_perc = 0.2; %0.2 is default (>abs_bdry_thickness_perc)
 %Water interface
-op.water_interface_perc = 0; %0 is default (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
-op.water_interface_single = 0; %0 is default (1 separates transducer from specimen by 1 element)
+op.water_interface_perc = 0; %0-1 (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+op.water_interface_single = 0; %0 or 1 (1 separates transducer from specimen by 1 element)
 
-%Input
+%Setup
 op.steel_and_water = 0;
 op.plys_and_water = 1;
+%Plys
+op.n_ply_layers = 2;
+op.n_plys_per_type = 1;
+op.ply_symmetry = 0;
 %Signal
 max_time = 5e-6;
 %FEA options
-field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
-use_gpu_if_present = 1;
+fe_options.field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
+fe_options.use_gpu_if_present = 1;
 %Output
-op.geometry = 0;
-op.run_fea = 1;
-op.plot_sim_data = 1;
-op.plot_exp_data = 1;
-op.animate = 1;
-
+op.geometry = 1;
+if ~op.geometry %tmp
+    op.run_fea = 1;
+    op.plot_sim_data = 1;
+    op.plot_exp_data = 1;
+    op.animate = 1;
+else
+    op.run_fea = 0;
+    op.plot_sim_data = 0;
+    op.plot_exp_data = 0;
+    op.animate = 0;
+end
 %% CALCULATE MORE PARAMETERS (CHECK OPTIONS)
 
 %Water options
@@ -140,8 +150,8 @@ wbt = water_brdy_thickness; %tmp for readability
 specimen_brdy_pts = [
     0,            wbt*op.lower_water_present
     model_size_w, wbt*op.lower_water_present
-    model_size_w, wbt*(op.upper_water_present + op.lower_water_present) + specimen_size
-    0,            wbt*(op.upper_water_present + op.lower_water_present) + specimen_size];
+    model_size_w, wbt*op.lower_water_present + specimen_size
+    0,            wbt*op.lower_water_present + specimen_size];
 %Define top of specimen for later use
 top_of_specimen = specimen_brdy_pts(3,2);
 
@@ -170,42 +180,45 @@ el_size = fn_get_suitable_el_size(matls, centre_freq, els_per_wavelength);
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(bdry_pts, el_size);
 
-%% DEFINE MATERIALS AND POROSITY
+%% DEFINE MATERIALS
 
+%First set all elements to water
 mod.el_mat_i(:) = water_matl_i;
+%Set specimen materials
 if op.steel_and_water
     mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, steel_matl_i);
 end
 if op.plys_and_water
     %Set ply materials (input 1 = layer 1, input 2 = layer 2)
-    [mod, new_top_of_specimen] = fn_set_ply_material(mod, 1, 2, specimen_brdy_pts, 32, 4);
-    %Redefine top of specimen
-    top_of_specimen = new_top_of_specimen;
+    [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, 1, 2, specimen_brdy_pts, model_size_h);
 end
-%Add interface elements - this is crucial otherwise there will be no
-%coupling between fluid and solid
+%Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
-
-%Add porosity (WIP)
-% n_pores = 10;
-% mod = fn_add_porosity(mod, n_pores);
-
 %Define the absorbing layer
 mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
+%% ADD POROSITY (WIP)
+% n_pores = 10;
+% mod = fn_add_porosity(mod, n_pores);
 
 %% DEFINE TRANSDUCER
 
 %Define a line along which sources will be placed to excite waves
-if op.water_interface_single
-    src_offset = mod.el_height;
-elseif op.water_interface_perc
-    src_offset = op.water_interface_perc*wbt;
+%Adjust src offset if upper water is present
+if op.upper_water_present
+    %Redefine top of specimen
+    top_of_specimen = new_top_of_specimen;
+    if op.water_interface_single
+        src_offset = mod.el_height;
+    elseif op.water_interface_perc
+        src_offset = op.water_interface_perc*wbt;
+    else
+        error('Critical Option Error: problem if water options')
+    end
 else
     src_offset = 0;
     %src_offset = -0.5*model_size_h + wbt;
 end
-
 src_end_pts = [
     0.25 * model_size_w, top_of_specimen + src_offset
     0.75 * model_size_w, top_of_specimen + src_offset];
@@ -241,10 +254,6 @@ end
 %% RUN THE MODEL
 
 if op.run_fea
-    %Define FE options
-    fe_options.field_output_every_n_frames = field_output_every_n_frames;
-    fe_options.use_gpu_if_present = use_gpu_if_present;
-    fe_options.dof_to_use = []; %Blank uses all of available ones for all elements, subset can be set e.g. as [1,2]
 
     %Following relate to how absorbing regions are created by adding damping
     %matrix and reducing stiffness matrix to try and preserve acoustic impedance
