@@ -74,7 +74,7 @@ model_specimen_height = height_completed - sbp(1,2);
 model_accuracy = round(100*(model_specimen_height - specimen_height)/specimen_height, 2);
 fprintf("Specimen model accuracy: %.2f%%\n", model_accuracy)
 if abs(model_accuracy) > 5
-    fprintf('CAUTION: Model Accuracy is less than 5%\n')
+    disp('CAUTION: Specimen model accuracy is less than 5%')
 end
 
 %Return top of specimen (because new height != defined specimen height)
