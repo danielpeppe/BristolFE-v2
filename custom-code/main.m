@@ -9,31 +9,25 @@ load('g4-s8_x-8000_z0_025.mat');
 
 %% KEY MODELLING PARAMETERS
 
-%%%%% Current Working Model
-%   1. upper_water_present = 0 - this ensures the instability at water
-%      boundary does not occure at transducer. Therefore, instablity
-%      'reaches' src later on in simulation
-
+%%%%%%%%%%%%% dials %%%%%%%%%%%%%
 %Resolution
 els_per_wavelength = 5; %10 is default (increases are non-linear)
 time_step_safety_factor = 3; %3 is default
-%Model size, specimen size and absorbing boundary
-specimen_size = 4e-3; %[mm]
-abs_bdry_thickness_perc = 0.2; %0.1 is default (relative to specimen_size)
-model_size_w_multiplier = 2; %1 is default
+%Model
+model_size_w_multiplier = 1.5; %1 is default
+abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
+%Ply options
+op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
+op.back_wall_reflection_by_water_density = 2; %1 is default
+%%%%%%%%%%%%% dials %%%%%%%%%%%%%
 
+%Signal
+op.aperture_n_els = 8; %number of elements
 %Material indices (ply Material layers = 1 and 2) (solid mateial = 3) (indices cannot be skipped)
 ply90_matl_i = 1;
 ply0_matl_i = 2;
 steel_matl_i = 3; %DEBUGGING
 water_matl_i = 4;
-%Composite structure
-op.n_ply_layers = 32;
-op.n_plys_per_type = 2;
-op.ply_symmetry = 1;
-%Ply options
-op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
-op.back_wall_reflection_by_water_density = 2; %1 is default
 %FEA options
 fe_options.field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
 max_time = 5e-6; %5e-6 is default (configures signal which in turn sets FEA time)
@@ -102,14 +96,13 @@ matls(steel_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 
 % % sqrt(290e9/8900)=5708.3 m/s
 
-
 %% DEFINE SHAPE OF MODEL
 
 %Define model parameters
-water_brdy_thickness = op.water_bdry_thickness_perc*specimen_size;
-model_size_w = specimen_size*model_size_w_multiplier;
-model_size_h = specimen_size + water_brdy_thickness*(op.upper_water_present + op.lower_water_present);
-abs_bdry_thickness = abs_bdry_thickness_perc*specimen_size;
+water_brdy_thickness = op.water_bdry_thickness_perc*op.specimen_size;
+model_size_w = op.specimen_size*model_size_w_multiplier;
+model_size_h = op.specimen_size + water_brdy_thickness*(op.upper_water_present + op.lower_water_present);
+abs_bdry_thickness = abs_bdry_thickness_perc*op.specimen_size;
 
 %Define size of model
 bdry_pts = [
@@ -123,8 +116,8 @@ wbt = water_brdy_thickness; %tmp for readability
 specimen_brdy_pts = [
     0,            wbt*op.lower_water_present
     model_size_w, wbt*op.lower_water_present
-    model_size_w, wbt*op.lower_water_present + specimen_size
-    0,            wbt*op.lower_water_present + specimen_size];
+    model_size_w, wbt*op.lower_water_present + op.specimen_size
+    0,            wbt*op.lower_water_present + op.specimen_size];
 %Define top of specimen for later use
 top_of_specimen = specimen_brdy_pts(3,2);
 
@@ -172,8 +165,11 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
 %% DEFINE PROBE END POINTS
 
-%Width of exp probe
+%Define exp probe aperture
 probe_width = exp_data.array.el_xc(end) - exp_data.array.el_xc(1);
+aperture_width = probe_width * op.aperture_n_els/exp_data.num_els;
+aperture_width_perc = abs(aperture_width - model_size_w)/model_size_w;
+
 %Define a line along which sources will be placed to excite waves
 if op.upper_water_present
     %Redefine src_dir for fluid
@@ -195,8 +191,8 @@ end
 %Define src end points
 if ~op.horizontal_src
     src_end_pts = [
-        0.25*model_size_w, top_of_specimen + src_offset
-        0.75*model_size_w, top_of_specimen + src_offset];
+        aperture_width_perc/2*model_size_w, top_of_specimen + src_offset
+        (1 - aperture_width_perc/2)*model_size_w, top_of_specimen + src_offset];
 else
     %Redefine src_dir for fluid
     src_dir = 1;
@@ -266,10 +262,8 @@ end
 %Plot experimental data on top
 if op.plot_exp_data
     hold on
-    %Define aperture
-    aperture_n_els = 8; %number of elements
     %Get time data for aperture
-    aperture = 1:aperture_n_els;
+    aperture = 1:op.aperture_n_els;
     aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx,aperture);
     aperture_time_data = sum(exp_data.time_data(:,aperture_data),2);
     %Scale dsp data
@@ -279,7 +273,7 @@ if op.plot_exp_data
     plot(exp_data.time - translate_time, scale_dsp*aperture_time_data);
 end
 
-%op.animate result
+%animate result
 if op.animate
     figure;
     display_options.interface_el_col = 'b';

@@ -2,6 +2,8 @@ function op = fn_set_options(op)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
+%Specimen
+default_op.specimen_size = 4e-3; %[mm]
 %Location of transducer in water
 default_op.upper_water_present = 0;
 default_op.lower_water_present = 1;
