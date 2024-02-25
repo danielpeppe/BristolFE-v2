@@ -7,7 +7,7 @@ n_ply_layers = op.n_ply_layers;
 n_plys_per_type = op.n_plys_per_type;
 ply_symmetry = op.ply_symmetry;
 upper_water_present = op.upper_water_present;
-ply_type_boundary = op.ply_type_boundary;
+interply_boundary = op.interply_boundary;
 
 %Calculate ply layer heights so ply material is applied to specific layers
 sbp = specimen_brdy_pts; %tmp for readability
@@ -64,7 +64,7 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         %Update height of material changed in specimen
         height_completed = height_completed + ply_target_height;
         %Set inter-ply-type inertia boundary for reflections
-        if ply_type_boundary && (layer_in_type < n_plys_per_type || (ply_symmetry && (target_layer == n_ply_layers/2)))
+        if interply_boundary && (layer_in_type < n_plys_per_type || (ply_symmetry && (target_layer == n_ply_layers/2)))
             mod = set_target_layer_material(mod, matl_i + 1, specimen_width, mod.el_height, height_completed, safety_margin, 1);
         end
 
@@ -89,7 +89,7 @@ top_of_specimen = height_completed;
 end
 
 
-function [mod, height_completed] = set_target_layer_material(mod, matl_i, specimen_width, target_height, height_completed, safety_margin, inter_ply_boundary)
+function [mod, height_completed] = set_target_layer_material(mod, matl_i, specimen_width, target_height, height_completed, safety_margin, set_interply_boundary)
 %Boundary points of target layer
 bdry_pts = [0,               0
             specimen_width,  0
@@ -106,7 +106,7 @@ bdry_pts = bdry_pts + safety_margin*[-1 0
                                       1 0
                                      -1 0];
 
-if inter_ply_boundary
+if set_interply_boundary
     if target_height ~= mod.el_height
         error('Ply boundary material must be 1 layer thick')
     end

@@ -17,16 +17,19 @@ time_step_safety_factor = 3; %3 is default
 op.model_size_w_multiplier = 1.5; %1.5 is default
 op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 %Ply options
-op.wave_velocity_by_E_t = 1.27; %1 is default (adjusts E_t stiffness)
+op.shear_wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness) (1.27)
 op.back_wall_reflection_by_water_density = 1; %1 is default
-op.boundary_density_multiplier = 1.1;
-op.boundary_stiffness_multiplier = 1.1;
+%Interply boundary
+op.interply_boundary = 1;
+op.interply_density_multiplier = 1;
+op.interply_stiffness_multiplier = 1;
 %%%%%%%%%%%%% dials %%%%%%%%%%%%%
 
+%Active
 % op.upper_water_present = 1;
 % op.water_interface_single = 1;
-op.n_plys_per_type = 2;
-op.ply_type_boundary = 1;
+op.n_plys_per_type = 1;
+
 %Signal
 op.separate_transmitter = 0;
 op.separate_receiver = 0;
@@ -54,12 +57,10 @@ op = fn_set_options(op);
 %% DEFINE MATERIAL
 
 %Ply Material properties
-E_fib = 164e9; %[GPa]
-G_fib = 5e9;
-v_fib = 0.32;
-E_t = 12e9 * op.wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
-G_t = 3.98e9;
-v_t = 0.024;
+% E_fib = 164e9; G_fib = 5e9; v_fib = 0.32; G_t = 3.98e9; v_t = 0.024;
+% E_t = 12e9 * op.shear_wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
+E_fib = 86.65e9; G_fib = 5.17e9; v_fib = 0.435; G_t = 4.50e9; v_t = 0.042;
+E_t = 13.44e9 * op.shear_wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
 
 %Plys at 0 degrees orientation (along z-axis)
 ply_orientation = 0; %rotation of ply (0 or 90)
@@ -82,12 +83,12 @@ matls(ply90_matl_i).name = 'Ply Layer (90 deg)';
 
 %Ply boundary materials
 matls(ply0boundary_matl_i) = matls(ply0_matl_i);
-matls(ply0boundary_matl_i).rho = matls(ply0_matl_i).rho * op.boundary_density_multiplier;
-matls(ply0boundary_matl_i).D = matls(ply0_matl_i).D * op.boundary_stiffness_multiplier;
+matls(ply0boundary_matl_i).rho = matls(ply0_matl_i).rho * op.interply_density_multiplier;
+matls(ply0boundary_matl_i).D = matls(ply0_matl_i).D * op.interply_stiffness_multiplier;
 matls(ply0boundary_matl_i).col = hsv2rgb([0,.75,.60]);
 matls(ply90boundary_matl_i) = matls(ply90_matl_i);
-matls(ply90boundary_matl_i).rho = matls(ply90_matl_i).rho * op.boundary_density_multiplier;
-matls(ply90boundary_matl_i).D = matls(ply90_matl_i).D * op.boundary_stiffness_multiplier;
+matls(ply90boundary_matl_i).rho = matls(ply90_matl_i).rho * op.interply_density_multiplier;
+matls(ply90boundary_matl_i).D = matls(ply90_matl_i).D * op.interply_stiffness_multiplier;
 matls(ply90boundary_matl_i).col = hsv2rgb([.40,.30,.60]);
 
 %Water
@@ -187,7 +188,6 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 %Define exp probe aperture
 probe_width = exp_data.array.el_xc(end) - exp_data.array.el_xc(1);
 aperture_width = probe_width * op.aperture_n_els/exp_data.num_els;
-% aperture_width_perc = abs(aperture_width - model_size_w)/model_size_w;
 
 %Define a line along which sources will be placed to excite waves
 if op.upper_water_present
@@ -207,6 +207,7 @@ else
     src_offset = 0;
     %src_offset = -0.5*model_size_h + wbt;
 end
+
 %Define src end points
 if ~op.horizontal_src
     src_end_pts = [
