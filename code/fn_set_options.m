@@ -2,8 +2,9 @@ function op = fn_set_options(op)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
-%Specimen
-default_op.specimen_size = 4e-3; %[mm]
+%Model
+default_op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
+default_op.model_size_w_multiplier = 1.5;
 %Location of transducer in water
 default_op.upper_water_present = 0;
 default_op.lower_water_present = 1;
@@ -13,6 +14,7 @@ default_op.water_bdry_thickness_perc = 0.2; %0.2 is default (>abs_bdry_thickness
 default_op.water_interface_perc = 0; %0-1 (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
 default_op.water_interface_single = 0; %0 or 1 (1 separates transducer from specimen by 1 element)
 %Specimen
+default_op.specimen_size = 4e-3; %[mm]
 default_op.solid_specimen = 0;
 default_op.composite_specimen = 1;
 %Composite structure
@@ -22,6 +24,8 @@ default_op.ply_symmetry = 1;
 %Ply options
 default_op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
 default_op.back_wall_reflection_by_water_density = 1; %1 is default
+default_op.boundary_density_multiplier = 1;
+default_op.boundary_stiffness_multiplier = 1;
 %Signal options
 default_op.horizontal_src = 0;
 %Output

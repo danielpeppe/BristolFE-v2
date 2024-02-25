@@ -14,25 +14,35 @@ load('g4-s8_x-8000_z0_025.mat');
 els_per_wavelength = 5; %10 is default (increases are non-linear)
 time_step_safety_factor = 3; %3 is default
 %Model
-model_size_w_multiplier = 1.5; %1 is default
-abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
+op.model_size_w_multiplier = 1.5; %1.5 is default
+op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 %Ply options
-op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
-op.back_wall_reflection_by_water_density = 2; %1 is default
+op.wave_velocity_by_E_t = 1.27; %1 is default (adjusts E_t stiffness)
+op.back_wall_reflection_by_water_density = 1; %1 is default
+op.boundary_density_multiplier = 1.1;
+op.boundary_stiffness_multiplier = 1.1;
 %%%%%%%%%%%%% dials %%%%%%%%%%%%%
 
+% op.upper_water_present = 1;
+% op.water_interface_single = 1;
+op.n_plys_per_type = 2;
+op.ply_type_boundary = 1;
 %Signal
+op.separate_transmitter = 0;
+op.separate_receiver = 0;
 op.aperture_n_els = 8; %number of elements
 %Material indices (ply Material layers = 1 and 2) (solid mateial = 3) (indices cannot be skipped)
 ply90_matl_i = 1;
-ply0_matl_i = 2;
-steel_matl_i = 3; %DEBUGGING
-water_matl_i = 4;
+ply90boundary_matl_i = 2; %must be layer index + 1
+ply0_matl_i = 3;
+ply0boundary_matl_i = 4;
+steel_matl_i = 5; %DEBUGGING
+water_matl_i = 6;
 %FEA options
 fe_options.field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
-max_time = 5e-6; %5e-6 is default (configures signal which in turn sets FEA time)
+max_time = 3.5e-6; %5e-6 is default (configures signal which in turn sets FEA time)
 %Output
-op.geometry = 0;
+op.geometry = 0; %disables other outputs
 op.run_fea = 1;
 op.plot_sim_data = 1;
 op.plot_exp_data = 1;
@@ -50,11 +60,10 @@ v_fib = 0.32;
 E_t = 12e9 * op.wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
 G_t = 3.98e9;
 v_t = 0.024;
-ply_rho = 1570; %[kg/m3]
 
 %Plys at 0 degrees orientation (along z-axis)
 ply_orientation = 0; %rotation of ply (0 or 90)
-matls(ply0_matl_i).rho = ply_rho;
+matls(ply0_matl_i).rho = 1570;
 matls(ply0_matl_i).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
 %matls(ply0_matl_i).D = matls(steel_matl_i).D;
 % matls(ply0_matl_i).rayleigh_damping_coefs = [0 0]; %[alpha beta]
@@ -70,6 +79,16 @@ matls(ply90_matl_i).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_ori
 %matls(ply90_matl_i).D = matls(steel_matl_i).D; 
 matls(ply90_matl_i).col = ply0col/2;
 matls(ply90_matl_i).name = 'Ply Layer (90 deg)';
+
+%Ply boundary materials
+matls(ply0boundary_matl_i) = matls(ply0_matl_i);
+matls(ply0boundary_matl_i).rho = matls(ply0_matl_i).rho * op.boundary_density_multiplier;
+matls(ply0boundary_matl_i).D = matls(ply0_matl_i).D * op.boundary_stiffness_multiplier;
+matls(ply0boundary_matl_i).col = hsv2rgb([0,.75,.60]);
+matls(ply90boundary_matl_i) = matls(ply90_matl_i);
+matls(ply90boundary_matl_i).rho = matls(ply90_matl_i).rho * op.boundary_density_multiplier;
+matls(ply90boundary_matl_i).D = matls(ply90_matl_i).D * op.boundary_stiffness_multiplier;
+matls(ply90boundary_matl_i).col = hsv2rgb([.40,.30,.60]);
 
 %Water
 matls(water_matl_i).rho = 1000*op.back_wall_reflection_by_water_density;
@@ -100,9 +119,9 @@ matls(steel_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc*op.specimen_size;
-model_size_w = op.specimen_size*model_size_w_multiplier;
+model_size_w = op.specimen_size*op.model_size_w_multiplier;
 model_size_h = op.specimen_size + water_brdy_thickness*(op.upper_water_present + op.lower_water_present);
-abs_bdry_thickness = abs_bdry_thickness_perc*op.specimen_size;
+abs_bdry_thickness = op.abs_bdry_thickness_perc*op.specimen_size;
 
 %Define size of model
 bdry_pts = [
@@ -148,11 +167,11 @@ mod = fn_isometric_structured_mesh(bdry_pts, el_size);
 mod.el_mat_i(:) = water_matl_i;
 %Set specimen materials
 if op.solid_specimen
-    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, 3);
+    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, 5);
 end
 if op.composite_specimen
     %Set ply materials (input 1 = layer 1, input 2 = layer 2)
-    [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, 1, 2, specimen_brdy_pts, model_size_h);
+    [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, 1, 3, specimen_brdy_pts);
 end
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
@@ -168,7 +187,7 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 %Define exp probe aperture
 probe_width = exp_data.array.el_xc(end) - exp_data.array.el_xc(1);
 aperture_width = probe_width * op.aperture_n_els/exp_data.num_els;
-aperture_width_perc = abs(aperture_width - model_size_w)/model_size_w;
+% aperture_width_perc = abs(aperture_width - model_size_w)/model_size_w;
 
 %Define a line along which sources will be placed to excite waves
 if op.upper_water_present
@@ -191,8 +210,8 @@ end
 %Define src end points
 if ~op.horizontal_src
     src_end_pts = [
-        aperture_width_perc/2*model_size_w, top_of_specimen + src_offset
-        (1 - aperture_width_perc/2)*model_size_w, top_of_specimen + src_offset];
+        model_size_w/2 - aperture_width/2, top_of_specimen + src_offset
+        model_size_w/2 + aperture_width/2, top_of_specimen + src_offset];
 else
     %Redefine src_dir for fluid
     src_dir = 1;
@@ -205,7 +224,13 @@ end
 
 %Identify nodes along the source line to say where the loading will be 
 %when FE model is run
-steps{1}.load.frc_nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
+
+if op.separate_transmitter
+    transmitter_end_pts = src_end_pts - mod.el_height*[0 1; 0 1];
+    steps{1}.load.frc_nds = fn_find_nodes_on_line(mod.nds, transmitter_end_pts(1, :), transmitter_end_pts(2, :), el_size / 2);
+else
+    steps{1}.load.frc_nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
+end
 steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * src_dir;
 
 %Also provide the time signal for the loading (if this is a vector, it will
@@ -217,17 +242,25 @@ steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycle
 
 %Also record displacement history at same points (NB there is no reason why
 %these have to be same as forcing points)
-steps{1}.mon.nds = steps{1}.load.frc_nds;
-steps{1}.mon.dfs = steps{1}.load.frc_dfs;
-
+if op.separate_receiver
+    receiver_end_pts = src_end_pts - mod.el_height*[0 1; 0 1];
+    steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, receiver_end_pts(1, :), receiver_end_pts(2, :), el_size / 2);
+else
+    steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
+end
+steps{1}.mon.dfs = ones(size(steps{1}.mon.nds)) * src_dir;
 %% DISPLAY MODEL
+
+%Display options
+display_options.interface_el_col = 'b';
+display_options.draw_elements = 0;
+display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
+display_options.node_sets_to_plot(1).col = 'r.';
+display_options.node_sets_to_plot(2).nd = steps{1}.mon.nds;
+display_options.node_sets_to_plot(2).col = 'b.';
 
 if op.geometry
     figure; 
-    display_options.interface_el_col = 'b';
-    display_options.draw_elements = 0;
-    display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
-    display_options.node_sets_to_plot(1).col = 'r.';
     h_patch = fn_show_geometry(mod, matls, display_options);
 end
 
@@ -276,10 +309,6 @@ end
 %animate result
 if op.animate
     figure;
-    display_options.interface_el_col = 'b';
-    display_options.draw_elements = 0;
-    display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
-    display_options.node_sets_to_plot(1).col = 'r.';
     h_patch = fn_show_geometry(mod, matls, display_options);
     anim_options.repeat_n_times = 10;
     anim_options.norm_val = median(res_sum_dsps);
