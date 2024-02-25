@@ -121,7 +121,7 @@ end
 model_specimen_height = height_completed - sbp(1,2);
 model_accuracy = round(100*model_specimen_height/specimen_height, 2);
 fprintf("Specimen model accuracy: %.2f%%\n", model_accuracy)
-if abs(100 - model_accuracy) < 5
+if abs(100 - model_accuracy) > 5
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('CAUTION: Specimen model accuracy is less than 95%')
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
