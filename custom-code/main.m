@@ -309,7 +309,7 @@ if op.animate
     figure;
     h_patch = fn_show_geometry(mod, matls, display_options);
     anim_options.repeat_n_times = 10;
-    anim_options.norm_val = median(res_sum_dsps);
+    anim_options.norm_val = abs(median(res_sum_dsps)); %must be positive
     fn_run_animation(h_patch, res{1}.fld, anim_options);
 end
 
