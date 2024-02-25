@@ -136,15 +136,15 @@ for t = 1:numel(un_typs)
             else
                 rho = matls(un_mat(m)).rho;
             end
-            % %Rayleigh Damping
-            % if isfield(matls(un_mat(m)), 'rayleigh_damping_coefs')
-            %     rayleigh_damping_coefs = matls(un_mat(m)).rayleigh_damping_coefs;
-            %     if isempty(rayleigh_damping_coefs)
-            %         rayleigh_damping_coefs = [0 0];
-            %     end
-            % else
-            %     rayleigh_damping_coefs = [0 0];
-            % end
+            %Rayleigh Damping
+            if isfield(matls(un_mat(m)), 'rayleigh_coefs')
+                rayleigh_coefs = matls(un_mat(m)).rayleigh_coefs;
+                if isempty(rayleigh_coefs)
+                    rayleigh_coefs = [0 0];
+                end
+            else
+                rayleigh_coefs = [0 0];
+            end
         else
             D = 0; %For elements with no material e.g. interface
             rho = 0;
@@ -159,7 +159,7 @@ for t = 1:numel(un_typs)
         
 
         %Get the element stiffness and mass matrices
-        [el_K, el_C, el_M, loc_nd, loc_df] = fn_el_mats(nds, els(el_i2, :), D, rho, fe_options.dof_to_use);
+        [el_K, el_C, el_M, loc_nd, loc_df] = fn_el_mats(nds, els(el_i2, :), D, rho, rayleigh_coefs, fe_options.dof_to_use);
         
         % %convert loc_df into indices starting at 1 (necessary to avoid
         % %wasting tons of space when dealing with acoustic elements with the

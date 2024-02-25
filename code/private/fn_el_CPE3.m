@@ -1,4 +1,4 @@
-function [el_K, el_C, el_M, loc_nd, loc_df] = fn_el_CPE3_v2(nds, els, D, rho, varargin)
+function [el_K, el_C, el_M, loc_nd, loc_df] = fn_el_CPE3_v2(nds, els, D, rho, rayleigh_coefs, varargin)
 %SUMMARY
 %	This function was created automatically by fn_create_element_matrix_file
 %	and contains code to return the stiffness and mass matrices
