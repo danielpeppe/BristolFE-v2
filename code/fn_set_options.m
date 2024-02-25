@@ -21,6 +21,8 @@ default_op.composite_specimen = 1;
 default_op.n_ply_layers = 32;
 default_op.n_plys_per_type = 2;
 default_op.ply_symmetry = 1;
+default_op.interply_boundary = 1;
+default_op.interply_midway_boundary = 1;
 %Ply options
 default_op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
 default_op.back_wall_reflection_by_water_density = 1; %1 is default
@@ -43,11 +45,17 @@ op = fn_set_default_fields(op, default_op);
 if op.solid_specimen && op.composite_specimen
     error('Option Error: choose solid_specimen or composite_specimen')
 elseif op.abs_bdry_thickness_perc > op.water_bdry_thickness_perc
+    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('CAUTION: absorbing boundary > water boundary')
+    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+end
+%Ply options
+if op.interply_boundary == 0 && op.interply_midway_boundary == 1
+    error('Option error: set interply_boundary to use interply_midway_boundary')
 end
 %Water options
 if op.water_interface_perc && op.water_interface_single
-    error('Option Error: Choose either op.water_interface_perc OR op.water_interface_single (not both)')
+    error('Option Error: choose either op.water_interface_perc OR op.water_interface_single (not both)')
 elseif xor(op.water_interface_perc || op.water_interface_single, op.upper_water_present)
     error('Option Error: set op.water_interface_perc/single correctly')
 elseif (op.lower_water_present || op.upper_water_present) && ~op.water_bdry_thickness_perc
