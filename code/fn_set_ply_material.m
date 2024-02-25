@@ -56,12 +56,11 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         else
             ply_target_height = ply_height_upper;
         end
-        %%% This tries to avoid upper water layer when not needed, but
-        %%% causes problems with src not being place correctly
-        % %Check if target_layer is final layer if upper water is present
-        % if (target_layer == n_ply_layers) && ~upper_water_present
-        %     ply_target_height = (1 + safety_margin_perc)*ply_target_height;
-        % end
+
+        %Check if target_layer is final layer if upper water is present
+        if (target_layer == n_ply_layers) && ~upper_water_present
+            ply_target_height = (1 + safety_margin_perc)*ply_target_height;
+        end
 
         %Set materials to target layer
         [mod, height_completed] = set_target_layer_material(mod, matl_i, specimen_width, ply_target_height, height_completed, safety_margin, 0);
