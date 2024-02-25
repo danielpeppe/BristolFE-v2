@@ -92,7 +92,7 @@ un_df = [];
 max_el_df = 0;
 for t = 1:numel(un_typs)
     fn_el_mats = str2func(['fn_el_', un_typs{t}]);
-    [~, ~, ~, ~, loc_df] = fn_el_mats([], [], [], fe_options.dof_to_use);
+    [~, ~, ~, ~, loc_df] = fn_el_mats([], [], [], [], [], fe_options.dof_to_use);
     un_df = [un_df, loc_df];
     max_el_df = max(max_el_df, numel(loc_df));
 end
