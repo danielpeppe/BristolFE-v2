@@ -6,10 +6,13 @@ addpath('../code');
 %% LOAD EXPERIMENTAL DATA
 
 load('g4-s8_x-8000_z0_025.mat');
+%Signal
+centre_freq = exp_data.array.centre_freq; %5e6 is default
+no_cycles = 4; %4 is default
 
 %% KEY MODELLING PARAMETERS
 
-%%%%%%%%%%%%% dials %%%%%%%%%%%%%
+%%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 %Resolution
 els_per_wavelength = 5; %10 is default (increases are non-linear)
 time_step_safety_factor = 3; %3 is default
@@ -17,18 +20,21 @@ time_step_safety_factor = 3; %3 is default
 op.model_size_w_multiplier = 1.5; %1.5 is default
 op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 %Ply options
-op.shear_wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness) (1.27)
+op.shear_wave_velocity_by_E_t = 1.17; %1 is default (adjusts E_t stiffness) (1.27)
 op.back_wall_reflection_by_water_density = 1; %1 is default
+op.rayleigh_quality_factor = 3000;
+op.rayleigh_coefs = [0 1/(2*pi*centre_freq*op.rayleigh_quality_factor)]; %[alpha beta]
+%op.rayleigh_coefs = [0 0];
 %Interply boundary
-op.interply_boundary = 1;
-op.interply_density_multiplier = 1;
-op.interply_stiffness_multiplier = 1;
-%%%%%%%%%%%%% dials %%%%%%%%%%%%%
+op.interply_boundary = 0;
+op.interply_density_multiplier = 1.05;
+op.interply_stiffness_multiplier = 1.05;
+%%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 
 %Active
 % op.upper_water_present = 1;
 % op.water_interface_single = 1;
-op.n_plys_per_type = 1;
+op.n_plys_per_type = 2;
 
 %Signal
 op.separate_transmitter = 0;
@@ -63,11 +69,10 @@ E_fib = 86.65e9; G_fib = 5.17e9; v_fib = 0.435; G_t = 4.50e9; v_t = 0.042;
 E_t = 13.44e9 * op.shear_wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
 
 %Plys at 0 degrees orientation (along z-axis)
-ply_orientation = 0; %rotation of ply (0 or 90)
+ply_orientation = 0;
 matls(ply0_matl_i).rho = 1570;
 matls(ply0_matl_i).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
-%matls(ply0_matl_i).D = matls(steel_matl_i).D;
-% matls(ply0_matl_i).rayleigh_damping_coefs = [0 0]; %[alpha beta]
+matls(ply0_matl_i).rayleigh_coefs = op.rayleigh_coefs;
 ply0col = hsv2rgb([3/4,0,0.80]);
 matls(ply0_matl_i).col = ply0col;
 matls(ply0_matl_i).name = 'Ply Layer (0 deg)';
@@ -77,7 +82,6 @@ matls(ply0_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 ply_orientation = 90; %rotation of ply (0 or 90)
 matls(ply90_matl_i) = matls(ply0_matl_i);
 matls(ply90_matl_i).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
-%matls(ply90_matl_i).D = matls(steel_matl_i).D; 
 matls(ply90_matl_i).col = ply0col/2;
 matls(ply90_matl_i).name = 'Ply Layer (90 deg)';
 
@@ -114,8 +118,6 @@ matls(steel_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 % matls(5).name = 'Resin';
 % matls(5).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 
-% % sqrt(290e9/8900)=5708.3 m/s
-
 %% DEFINE SHAPE OF MODEL
 
 %Define model parameters
@@ -148,12 +150,6 @@ abs_bdry_pts = [
     model_size_w - abt, abt*op.lower_water_present
     model_size_w - abt, model_size_h - op.upper_water_present*abt
     abt,                model_size_h - op.upper_water_present*abt];
-
-%% DEFINE SIGNAL
-
-centre_freq = 5e6; %5e6 is default
-no_cycles = 4; %4 is default
-src_dir = 2; %direction of forces applied: 1 = x, 2 = y, 3 = z (for solids), 4 = volumetric expansion (for fluids)
 
 %% DEFINE MESH
 
@@ -204,6 +200,7 @@ if op.upper_water_present
         error('Critical Option Error: problem if water options')
     end
 else
+    src_dir = 2;
     src_offset = 0;
     %src_offset = -0.5*model_size_h + wbt;
 end

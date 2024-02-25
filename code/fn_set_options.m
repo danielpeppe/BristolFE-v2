@@ -26,6 +26,7 @@ default_op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
 default_op.back_wall_reflection_by_water_density = 1; %1 is default
 default_op.boundary_density_multiplier = 1;
 default_op.boundary_stiffness_multiplier = 1;
+default_op.rayleigh_coefs = [0 0];
 %Signal options
 default_op.horizontal_src = 0;
 %Output
@@ -41,6 +42,8 @@ op = fn_set_default_fields(op, default_op);
 %Input options
 if op.solid_specimen && op.composite_specimen
     error('Option Error: choose solid_specimen or composite_specimen')
+elseif op.abs_bdry_thickness_perc > op.water_bdry_thickness_perc
+    disp('CAUTION: absorbing boundary > water boundary')
 end
 %Water options
 if op.water_interface_perc && op.water_interface_single

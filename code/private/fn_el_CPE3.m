@@ -153,18 +153,18 @@ el_M(:, 9, 9) = (J .* rho) ./ 6;
 
 
 % %Damping matrix (Rayleigh)
-% alpha = rayleigh_damping_coefs(1);
-% beta = rayleigh_damping_coefs(2);
+alpha = rayleigh_coefs(1);
+beta = rayleigh_coefs(2);
 el_C = zeros(size(els, 1), 9, 9);
-% el_C(:, 1, 1) = alpha*el_M(:, 1, 1) + beta*el_K(:, 1, 1);
-% el_C(:, 2, 2) = alpha*el_M(:, 2, 2) + beta*el_K(:, 2, 2);
-% el_C(:, 3, 3) = alpha*el_M(:, 3, 3) + beta*el_K(:, 3, 3);
-% el_C(:, 4, 4) = alpha*el_M(:, 4, 4) + beta*el_K(:, 4, 4);
-% el_C(:, 5, 5) = alpha*el_M(:, 5, 5) + beta*el_K(:, 5, 5);
-% el_C(:, 6, 6) = alpha*el_M(:, 6, 6) + beta*el_K(:, 6, 6);
-% el_C(:, 7, 7) = alpha*el_M(:, 7, 7) + beta*el_K(:, 7, 7);
-% el_C(:, 8, 8) = alpha*el_M(:, 8, 8) + beta*el_K(:, 8, 8);
-% el_C(:, 9, 9) = alpha*el_M(:, 9, 9) + beta*el_K(:, 9, 9);
+el_C(:, 1, 1) = alpha*el_M(:, 1, 1) + beta*el_K(:, 1, 1);
+el_C(:, 2, 2) = alpha*el_M(:, 2, 2) + beta*el_K(:, 2, 2);
+el_C(:, 3, 3) = alpha*el_M(:, 3, 3) + beta*el_K(:, 3, 3);
+el_C(:, 4, 4) = alpha*el_M(:, 4, 4) + beta*el_K(:, 4, 4);
+el_C(:, 5, 5) = alpha*el_M(:, 5, 5) + beta*el_K(:, 5, 5);
+el_C(:, 6, 6) = alpha*el_M(:, 6, 6) + beta*el_K(:, 6, 6);
+el_C(:, 7, 7) = alpha*el_M(:, 7, 7) + beta*el_K(:, 7, 7);
+el_C(:, 8, 8) = alpha*el_M(:, 8, 8) + beta*el_K(:, 8, 8);
+el_C(:, 9, 9) = alpha*el_M(:, 9, 9) + beta*el_K(:, 9, 9);
 
 %CRemove unwanted DOFs from element matrices
 [loc_nd, loc_df, el_K, el_C, el_M] = fn_remove_dofs_from_el_matrices(loc_nd, loc_df, dofs_to_use, el_K, el_C, el_M);
