@@ -20,6 +20,8 @@ anim_options = fn_set_default_fields(anim_options, default_options);
 
 if isempty(anim_options.norm_val)
     anim_options.norm_val = max(abs(fld), [], 'all');
+elseif anim_options.norm_val < 0
+    error('anim_options.norm_val has to be positive')
 end
 
 if ~iscell(h_patch)
