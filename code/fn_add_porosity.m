@@ -43,10 +43,10 @@ for i = 1:n_pores
     
     % List of points after translation
     bdry_pore = [x_translated', y_translated'];
-    [out_i, in] = fn_elements_in_region(mod, bdry_pore); %switch in and out to remove els within boundary
+    [in_i, out] = fn_elements_in_region(mod, bdry_pore);
     
     % combine ith pore with pore region selection
-    pores_out = pores_out | out_i;
+    pores_out = pores_out | in_i;
 end
 
 %label nodes with porosity as empty nodes
