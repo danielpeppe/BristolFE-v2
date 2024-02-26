@@ -14,42 +14,40 @@ no_cycles = 4; %4 is default
 
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 %Resolution
-els_per_wavelength = 5; %10 is default (increases are non-linear)
-time_step_safety_factor = 3; %3 is default
+els_per_wavelength = 10; %10 is default (increases are non-linear)
+time_step_safety_factor = 3; %3 is default (ensure reflections from 'unstable energy expansion' are avoided)
 %Model
 op.model_size_w_multiplier = 1.5; %1.5 is default
 op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 %Ply options
-op.shear_wave_velocity_by_E_t = 1.17; %1 is default (adjusts E_t stiffness) (1.27)
+op.shear_wave_velocity_by_E_t = 1; %1 is default
 op.back_wall_reflection_by_water_density = 1; %1 is default
-op.rayleigh_quality_factor = 3000;
-op.rayleigh_coefs = [0 1/(2*pi*centre_freq*op.rayleigh_quality_factor)]; %[alpha beta]
-%op.rayleigh_coefs = [0 0];
+% op.rayleigh_quality_factor = 10000;
+% op.rayleigh_coefs = [0 1/(2*pi*centre_freq*op.rayleigh_quality_factor)]; %[alpha beta]
+op.rayleigh_coefs = [0 0];
+%Composite materials
+op.layer1 = 'ply90';
+op.layer2 = 'ply0';
+op.interply_layer1 = 'resin';
+op.interply_layer2 = 'resin';
 %Interply boundary
-op.interply_boundary = 0;
-op.interply_density_multiplier = 1.05;
-op.interply_stiffness_multiplier = 1.05;
+op.interply_boundary = 1; %1 is default
+op.interply_midway_boundary = 1; %1 is deafult
+op.interply_every_layer = 1;
+op.interply_density_multiplier = 0.5;
+op.interply_stiffness_multiplier = 0.5;
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
-
 %Active
-% op.upper_water_present = 1;
-% op.water_interface_single = 1;
+op.upper_water_present = 0;
+op.water_interface_single = 0;
 op.n_plys_per_type = 2;
-
 %Signal
-op.separate_transmitter = 0;
+op.separate_transmitter = 0; %by 1 element
 op.separate_receiver = 0;
 op.aperture_n_els = 8; %number of elements
-%Material indices (ply Material layers = 1 and 2) (solid mateial = 3) (indices cannot be skipped)
-ply90_matl_i = 1;
-ply90boundary_matl_i = 2; %must be layer index + 1
-ply0_matl_i = 3;
-ply0boundary_matl_i = 4;
-steel_matl_i = 5; %DEBUGGING
-water_matl_i = 6;
 %FEA options
 fe_options.field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
-max_time = 3.5e-6; %5e-6 is default (configures signal which in turn sets FEA time)
+max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
 %Output
 op.geometry = 0; %disables other outputs
 op.run_fea = 1;
@@ -60,63 +58,55 @@ op.animate = 1;
 %Set default options and validate
 op = fn_set_options(op);
 
-%% DEFINE MATERIAL
+%% DEFINE MATERIALS
 
-%Ply Material properties
+%Ply material properties
 % E_fib = 164e9; G_fib = 5e9; v_fib = 0.32; G_t = 3.98e9; v_t = 0.024;
 % E_t = 12e9 * op.shear_wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
 E_fib = 86.65e9; G_fib = 5.17e9; v_fib = 0.435; G_t = 4.50e9; v_t = 0.042;
-E_t = 13.44e9 * op.shear_wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
-
-%Plys at 0 degrees orientation (along z-axis)
+E_t = 13.44e9 * op.shear_wave_velocity_by_E_t;
+%ply90
+ply_orientation = 90; %rotation of ply (0 or 90 along z-axis)
+mat.ply90.rho = 1570;
+mat.ply90.D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
+mat.ply90.rayleigh_coefs = op.rayleigh_coefs;
+mat.ply90.col = hsv2rgb([3/4,0,0.80]);
+mat.ply90.el_typ = 'CPE3';
+%ply0
 ply_orientation = 0;
-matls(ply0_matl_i).rho = 1570;
-matls(ply0_matl_i).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
-matls(ply0_matl_i).rayleigh_coefs = op.rayleigh_coefs;
-ply0col = hsv2rgb([3/4,0,0.80]);
-matls(ply0_matl_i).col = ply0col;
-matls(ply0_matl_i).name = 'Ply Layer (0 deg)';
-matls(ply0_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
-
-%Plys at 90 degrees orientation (along x-axis)
-ply_orientation = 90; %rotation of ply (0 or 90)
-matls(ply90_matl_i) = matls(ply0_matl_i);
-matls(ply90_matl_i).D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
-matls(ply90_matl_i).col = ply0col/2;
-matls(ply90_matl_i).name = 'Ply Layer (90 deg)';
-
-%Ply boundary materials
-matls(ply0boundary_matl_i) = matls(ply0_matl_i);
-matls(ply0boundary_matl_i).rho = matls(ply0_matl_i).rho * op.interply_density_multiplier;
-matls(ply0boundary_matl_i).D = matls(ply0_matl_i).D * op.interply_stiffness_multiplier;
-matls(ply0boundary_matl_i).col = hsv2rgb([0,.75,.60]);
-matls(ply90boundary_matl_i) = matls(ply90_matl_i);
-matls(ply90boundary_matl_i).rho = matls(ply90_matl_i).rho * op.interply_density_multiplier;
-matls(ply90boundary_matl_i).D = matls(ply90_matl_i).D * op.interply_stiffness_multiplier;
-matls(ply90boundary_matl_i).col = hsv2rgb([.40,.30,.60]);
-
+mat.ply0 = mat.ply90;
+mat.ply0.D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
+mat.ply0.col = mat.ply90.col/2;
+%Resin
+mat.resin.rho = 1301  * op.boundary_density_multiplier;
+mat.resin.D = fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, 0.3) * op.boundary_stiffness_multiplier; 
+mat.resin.col = hsv2rgb([0,.75,.60]);
+mat.resin.el_typ = 'CPE3';
+%ply0 boundary
+mat.ply0b = mat.ply0;
+mat.ply0b.rho = mat.ply0.rho * op.interply_density_multiplier;
+mat.ply0b.D = mat.ply0.D * op.interply_stiffness_multiplier;
+mat.ply0b.col = hsv2rgb([0,.75,.60]);
+%ply90 boundary
+mat.ply90b = mat.ply90;
+mat.ply90b.rho = mat.ply90.rho * op.interply_density_multiplier;
+mat.ply90b.D = mat.ply90.D * op.interply_stiffness_multiplier;
+mat.ply90b.col = hsv2rgb([.40,.30,.60]);
 %Water
-matls(water_matl_i).rho = 1000*op.back_wall_reflection_by_water_density;
-%For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
-%calcualted here from ultrasonic velocity (1500) and density (1000)
-matls(water_matl_i).D = 1500^2 * 1000;
-matls(water_matl_i).col = hsv2rgb([0.6,0.5,0.8]);
-matls(water_matl_i).name = 'Water'; 
-matls(water_matl_i).el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
-
+% For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
+% calcualted here from ultrasonic velocity (1500) and density (1000)
+mat.water.rho = 1000*op.back_wall_reflection_by_water_density;
+mat.water.D = 1500^2 * 1000;
+mat.water.col = hsv2rgb([0.6,0.5,0.8]);
+mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
 %Steel (FOR DEBUGGING)
-matls(steel_matl_i).rho = 8900; %8900
-matls(steel_matl_i).D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
-matls(steel_matl_i).col = hsv2rgb([3/4,0.5,0.80]);
-matls(steel_matl_i).name = 'Steel';
-matls(steel_matl_i).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
+mat.steel.rho = 8900; %8900
+mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
+mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
+mat.steel.el_typ = 'CPE3'; %CPE3 must be the element type for a solid
 
-%Resin (FOR DEBUGGING)
-% matls(5).rho = 1301; %Density
-% matls(5).D = fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, v_t); 
-% matls(5).col = hsv2rgb([2/3,0,0.80]); %Colour for display
-% matls(5).name = 'Resin';
-% matls(5).el_typ = 'CPE3'; %CPE3 must be the element type for a solid
+%Get matls struct from mat struct
+matls = fn_get_matls_struct(op,mat);
 
 %% DEFINE SHAPE OF MODEL
 
@@ -161,14 +151,13 @@ mod = fn_isometric_structured_mesh(bdry_pts, el_size);
 %% DEFINE MATERIALS
 
 %First set all elements to water
-mod.el_mat_i(:) = water_matl_i;
+mod.el_mat_i(:) = fn_matl_i(matls,'water');
 %Set specimen materials
 if op.solid_specimen
-    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, 5);
+    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i('steel'));
 end
 if op.composite_specimen
-    %Set ply materials (input 1 = layer 1, input 2 = layer 2)
-    [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, 1, 3, specimen_brdy_pts);
+    [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
 end
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
@@ -181,10 +170,9 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
 %% DEFINE PROBE END POINTS
 
-%Define exp probe aperture
+%Define aperture
 probe_width = exp_data.array.el_xc(end) - exp_data.array.el_xc(1);
 aperture_width = probe_width * op.aperture_n_els/exp_data.num_els;
-
 %Define a line along which sources will be placed to excite waves
 if op.upper_water_present
     %Redefine src_dir for fluid
@@ -197,12 +185,11 @@ if op.upper_water_present
     elseif op.water_interface_perc
         src_offset = op.water_interface_perc*wbt;
     else
-        error('Critical Option Error: problem if water options')
+        error('Critical Option Error!: problem with water options')
     end
 else
     src_dir = 2;
     src_offset = 0;
-    %src_offset = -0.5*model_size_h + wbt;
 end
 
 %Define src end points
@@ -222,7 +209,6 @@ end
 
 %Identify nodes along the source line to say where the loading will be 
 %when FE model is run
-
 if op.separate_transmitter
     transmitter_end_pts = src_end_pts - mod.el_height*[0 1; 0 1];
     steps{1}.load.frc_nds = fn_find_nodes_on_line(mod.nds, transmitter_end_pts(1, :), transmitter_end_pts(2, :), el_size / 2);
@@ -247,6 +233,7 @@ else
     steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
 end
 steps{1}.mon.dfs = ones(size(steps{1}.mon.nds)) * src_dir;
+
 %% DISPLAY MODEL
 
 %Display options
@@ -256,7 +243,7 @@ display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
 display_options.node_sets_to_plot(1).col = 'r.';
 display_options.node_sets_to_plot(2).nd = steps{1}.mon.nds;
 display_options.node_sets_to_plot(2).col = 'b.';
-
+%Plot geometry
 if op.geometry
     figure; 
     h_patch = fn_show_geometry(mod, matls, display_options);
