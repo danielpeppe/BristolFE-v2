@@ -13,5 +13,4 @@ i = min(find(env > 0.01));
 s = env .* sin(2*pi * centre_freq * (t - ct));
 s = [s(i:end); zeros(i - 1, 1)];
 s = reshape(s, sz);
-s=s*-1; %tmp
 end
