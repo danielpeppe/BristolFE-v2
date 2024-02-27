@@ -62,5 +62,14 @@ if using_for_op
             end
         end
     end
+    %%Enable the following when required
+    % %Finally check for any options set in default that aren't present in
+    % %old_struct
+    % for ii=1:length(default_fieldnames)
+    %     %Check if new_struct is defined
+    %     if ~isfield(old_struct, default_fieldnames{ii})
+    %         fprintf("CAUTION: %s options is not defined in default options\n", default_fieldnames{ii})
+    %     end
+    % end
 end
 return
