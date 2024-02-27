@@ -19,15 +19,10 @@ default_op.composite_specimen = 1;
 default_op.n_ply_layers = 32;
 default_op.n_plys_per_type = 2;
 default_op.ply_symmetry = 1;
-default_op.interply_boundary = 1;
-default_op.interply_midway_boundary = 1;
-default_op.interply_every_layer = 0;
 %Composite materials
 default_op.layer1 = 'ply90';
 default_op.layer2 = 'ply0';
 %Ply options
-default_op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
-default_op.water_rho_multiplier = 1; %1 is default
 %   density
 default_op.ply0_rho_multiplier = 1;
 default_op.ply90_rho_multiplier = 1;
