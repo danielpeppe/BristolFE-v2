@@ -33,8 +33,10 @@ op.ply0_D_multiplier = 1;
 op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
 op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
 %Damping options
-op.rayleigh_quality_factor = 0.5; %inf disables damping
+op.rayleigh_quality_factor = inf; %inf disables damping
 op.rayleigh_coefs = [0 1/(2*pi*op.centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
+op.ply90_rayleigh_coefs = op.rayleigh_coefs;
+op.ply0_rayleigh_coefs = op.rayleigh_coefs;
 %Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
@@ -72,15 +74,16 @@ E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 
 ply_orientation = 90; %rotation of ply (0 or 90 along z-axis)
 mat.ply90.rho = 1570 * op.ply90_rho_multiplier;
 mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply90_shear_wave_velocity_by_E_t, G_t, v_t);
-mat.ply90.rayleigh_coefs = op.rayleigh_coefs;
+mat.ply90.rayleigh_coefs = op.ply90_rayleigh_coefs;
 mat.ply90.col = hsv2rgb([3/4,0.3,0.80]); %purple
 mat.ply90.el_typ = 'CPE3';
 %ply0
 ply_orientation = 0;
-mat.ply0 = mat.ply90;
 mat.ply0.rho = 1570 * op.ply0_rho_multiplier;
 mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply0_shear_wave_velocity_by_E_t, G_t, v_t);
+mat.ply0.rayleigh_coefs = op.ply0_rayleigh_coefs;
 mat.ply0.col = hsv2rgb([1/4,0,0.80]);
+mat.ply0.el_typ = 'CPE3';
 %Resin
 mat.resin.rho = 1301 * op.interply_rho_multiplier;
 mat.resin.D = op.interply_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, 0.37); 

@@ -152,7 +152,7 @@ el_M(:, 8, 8) = (J .* rho) ./ 6;
 el_M(:, 9, 9) = (J .* rho) ./ 6;
 
 
-% %Damping matrix (Rayleigh)
+%Damping matrix (Rayleigh)
 alpha = rayleigh_coefs(1);
 beta = rayleigh_coefs(2);
 el_C = zeros(size(els, 1), 9, 9);
