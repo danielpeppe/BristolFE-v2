@@ -7,95 +7,99 @@ addpath('../code');
 
 load('g4-s8_x-8000_z0_025.mat');
 %Signal
-centre_freq = exp_data.array.centre_freq; %5e6 is default
+op.centre_freq = exp_data.array.centre_freq; %5e6 is default
 no_cycles = 4; %4 is default
 
-%% KEY MODELLING PARAMETERS
+%% TUNING
 
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 %Resolution
-els_per_wavelength = 10; %10 is default (increases are non-linear)
+els_per_wavelength = 15; %10 is default (increases are non-linear)
 time_step_safety_factor = 3; %3 is default (ensure reflections from 'unstable energy expansion' are avoided)
-%Model
+%Model options
 op.model_size_w_multiplier = 1.5; %1.5 is default
 op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
-%Ply options
-op.shear_wave_velocity_by_E_t = 1; %1 is default
-op.back_wall_reflection_by_water_density = 1; %1 is default
-% op.rayleigh_quality_factor = 10000;
-% op.rayleigh_coefs = [0 1/(2*pi*centre_freq*op.rayleigh_quality_factor)]; %[alpha beta]
-op.rayleigh_coefs = [0 0];
-%Composite materials
+%Composite specimen options
 op.layer1 = 'ply90';
 op.layer2 = 'ply0';
+%Ply options
+op.n_plys_per_type = 2;
+%   density
+op.ply0_rho_multiplier = 1;
+op.ply90_rho_multiplier = 1;
+%   stiffness
+op.ply90_D_multiplier = 1;
+op.ply0_D_multiplier = 1;
+op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
+op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
+%Damping options
+op.rayleigh_quality_factor = 0.5; %inf disables damping
+op.rayleigh_coefs = [0 1/(2*pi*op.centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
+%Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
-%Interply boundary
 op.interply_boundary = 1; %1 is default
 op.interply_midway_boundary = 1; %1 is deafult
 op.interply_every_layer = 1;
-op.interply_density_multiplier = 0.5;
-op.interply_stiffness_multiplier = 0.5;
+op.interply_rho_multiplier = 0.8;
+op.interply_D_multiplier = 1;
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
-%Active
+
+%% OTHER OPTIONS
+%Paul demo
 op.upper_water_present = 0;
 op.water_interface_single = 0;
-op.n_plys_per_type = 2;
-%Signal
 op.separate_transmitter = 0; %by 1 element
 op.separate_receiver = 0;
-op.aperture_n_els = 8; %number of elements
-%FEA options
+%Sim options
 fe_options.field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
 max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
+op.aperture_n_els = 8; %number of elements
 %Output
-op.geometry = 0; %disables other outputs
-op.run_fea = 1;
-op.plot_sim_data = 1;
-op.plot_exp_data = 1;
-op.animate = 1;
+geometry = 0; %disables other outputs
+run_fea = 1;
+plot_sim_data = 1;
+plot_exp_data = 1;
+animate = 1;
 
 %Set default options and validate
 op = fn_set_options(op);
 
 %% DEFINE MATERIALS
 
-%Ply material properties
-% E_fib = 164e9; G_fib = 5e9; v_fib = 0.32; G_t = 3.98e9; v_t = 0.024;
-% E_t = 12e9 * op.shear_wave_velocity_by_E_t; %wave velocity can be adjusted by transverse stiffness
-E_fib = 86.65e9; G_fib = 5.17e9; v_fib = 0.435; G_t = 4.50e9; v_t = 0.042;
-E_t = 13.44e9 * op.shear_wave_velocity_by_E_t;
 %ply90
+E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 0.436;
 ply_orientation = 90; %rotation of ply (0 or 90 along z-axis)
-mat.ply90.rho = 1570;
-mat.ply90.D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
+mat.ply90.rho = 1570 * op.ply90_rho_multiplier;
+mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply90_shear_wave_velocity_by_E_t, G_t, v_t);
 mat.ply90.rayleigh_coefs = op.rayleigh_coefs;
-mat.ply90.col = hsv2rgb([3/4,0,0.80]);
+mat.ply90.col = hsv2rgb([3/4,0.3,0.80]); %purple
 mat.ply90.el_typ = 'CPE3';
 %ply0
 ply_orientation = 0;
 mat.ply0 = mat.ply90;
-mat.ply0.D = fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t, G_t, v_t);
-mat.ply0.col = mat.ply90.col/2;
+mat.ply0.rho = 1570 * op.ply0_rho_multiplier;
+mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply0_shear_wave_velocity_by_E_t, G_t, v_t);
+mat.ply0.col = hsv2rgb([1/4,0,0.80]);
 %Resin
-mat.resin.rho = 1301  * op.boundary_density_multiplier;
-mat.resin.D = fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, 0.3) * op.boundary_stiffness_multiplier; 
+mat.resin.rho = 1301 * op.interply_rho_multiplier;
+mat.resin.D = op.interply_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, 0.37); 
 mat.resin.col = hsv2rgb([0,.75,.60]);
 mat.resin.el_typ = 'CPE3';
 %ply0 boundary
 mat.ply0b = mat.ply0;
-mat.ply0b.rho = mat.ply0.rho * op.interply_density_multiplier;
-mat.ply0b.D = mat.ply0.D * op.interply_stiffness_multiplier;
+mat.ply0b.rho = mat.ply0.rho * op.interply_rho_multiplier;
+mat.ply0b.D = mat.ply0.D * op.interply_D_multiplier;
 mat.ply0b.col = hsv2rgb([0,.75,.60]);
 %ply90 boundary
 mat.ply90b = mat.ply90;
-mat.ply90b.rho = mat.ply90.rho * op.interply_density_multiplier;
-mat.ply90b.D = mat.ply90.D * op.interply_stiffness_multiplier;
+mat.ply90b.rho = mat.ply90.rho * op.interply_rho_multiplier;
+mat.ply90b.D = mat.ply90.D * op.interply_D_multiplier;
 mat.ply90b.col = hsv2rgb([.40,.30,.60]);
 %Water
 % For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
 % calcualted here from ultrasonic velocity (1500) and density (1000)
-mat.water.rho = 1000*op.back_wall_reflection_by_water_density;
+mat.water.rho = 1000*op.water_rho_multiplier;
 mat.water.D = 1500^2 * 1000;
 mat.water.col = hsv2rgb([0.6,0.5,0.8]);
 mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
@@ -144,7 +148,7 @@ abs_bdry_pts = [
 %% DEFINE MESH
 
 %Work out element size
-el_size = fn_get_suitable_el_size(matls, centre_freq, els_per_wavelength);
+el_size = fn_get_suitable_el_size(matls, op.centre_freq, els_per_wavelength);
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(bdry_pts, el_size);
 
@@ -222,7 +226,7 @@ steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * src_dir;
 %of different time signals for each frc_nds/frc_dfs
 time_step = fn_get_suitable_time_step(matls, el_size, time_step_safety_factor);
 steps{1}.load.time = 0: time_step:  max_time;
-steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycles);
+steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, op.centre_freq, no_cycles);
 
 %Also record displacement history at same points (NB there is no reason why
 %these have to be same as forcing points)
@@ -244,14 +248,15 @@ display_options.node_sets_to_plot(1).col = 'r.';
 display_options.node_sets_to_plot(2).nd = steps{1}.mon.nds;
 display_options.node_sets_to_plot(2).col = 'b.';
 %Plot geometry
-if op.geometry
+if geometry
     figure; 
     h_patch = fn_show_geometry(mod, matls, display_options);
+    return
 end
 
 %% RUN THE MODEL
 
-if op.run_fea
+if run_fea
     %Following relate to how absorbing regions are created by adding damping
     %matrix and reducing stiffness matrix to try and preserve acoustic impedance
     fe_options.damping_power_law = 3;
@@ -260,7 +265,7 @@ if op.run_fea
     
     %Run model
     res = fn_BristolFE_v2(mod, matls, steps, fe_options);
-    res_sum_dsps = sum(res{1}.dsps); %save displacements in variable for readability
+    res_sum_dsps = sum(res{1}.dsps); %tmp for readability
 
     %Measure instability using max, mean, median displacements (disabled)
     % fprintf('max dsp: %.2e, average dsp: %.2e median dsp: %.2e\n',max(res_sum_dsps), mean(res_sum_dsps), median(res_sum_dsps))
@@ -269,7 +274,7 @@ end
 %% SHOW THE RESULTS
 
 %Plot sim results
-if op.plot_sim_data
+if plot_sim_data
     %Show the history output as a function of time - here we just sum over all 
     %the nodes where displacments were recorded
     figure;
@@ -278,21 +283,21 @@ if op.plot_sim_data
     ylabel('Magnitude (-)')
 end
 %Plot experimental data on top
-if op.plot_exp_data
+if plot_exp_data
     hold on
     %Get time data for aperture
     aperture = 1:op.aperture_n_els;
     aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx,aperture);
     aperture_time_data = sum(exp_data.time_data(:,aperture_data),2);
     %Scale dsp data
-    scale_dsp = max(res_sum_dsps)/max(aperture_time_data); %Scale exp response to match sim response
+    scale_dsp = max(abs(res_sum_dsps))/max(abs(aperture_time_data)); %Scale exp response to match sim response
     translate_time = 1.194e-05; %Start of exp response
     %Plot
     plot(exp_data.time - translate_time, scale_dsp*aperture_time_data);
 end
 
 %animate result
-if op.animate
+if animate
     figure;
     h_patch = fn_show_geometry(mod, matls, display_options);
     anim_options.repeat_n_times = 10;

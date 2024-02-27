@@ -5,26 +5,16 @@ function op = fn_set_options(op)
 %Model
 default_op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 default_op.model_size_w_multiplier = 1.5;
-%Location of transducer in water
-default_op.upper_water_present = 0;
-default_op.lower_water_present = 1;
-%Water boundary
-default_op.water_bdry_thickness_perc = 0.25; %0.25 is default (>abs_bdry_thickness_perc)
-%Water interface
-default_op.water_interface_perc = 0; %0-1 (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
-default_op.water_interface_single = 0; %0 or 1 (1 separates transducer from specimen by 1 element)
+%Signal options
+default_op.centre_freq = 5e6;
+default_op.horizontal_src = 0;
+default_op.aperture_n_els = 8; %number of elements
+default_op.separate_transmitter = 0; %by 1 element
+default_op.separate_receiver = 0;
 %Specimen
 default_op.specimen_size = 4e-3; %[mm]
 default_op.solid_specimen = 0;
 default_op.composite_specimen = 1;
-%Material indices
-default_op.matls_i.ply90 = 1;
-default_op.matls_i.ply90boundary = 2;
-default_op.matls_i.ply0 = 3;
-default_op.matls_i.ply0boundary = 4;
-default_op.matls_i.steel = 5;
-default_op.matls_i.water = 6;
-default_op.matls_i.resin = 7;
 %Composite structure
 default_op.n_ply_layers = 32;
 default_op.n_plys_per_type = 2;
@@ -33,26 +23,41 @@ default_op.interply_boundary = 1;
 default_op.interply_midway_boundary = 1;
 default_op.interply_every_layer = 0;
 %Composite materials
-default_op.layer1 = 'ply0';
-default_op.layer2 = 'ply90';
-default_op.interply_layer1 = 'ply0b';
-default_op.interply_layer2 = 'ply90b';
+default_op.layer1 = 'ply90';
+default_op.layer2 = 'ply0';
 %Ply options
 default_op.wave_velocity_by_E_t = 1; %1 is default (adjusts E_t stiffness)
-default_op.back_wall_reflection_by_water_density = 1; %1 is default
-default_op.boundary_density_multiplier = 1;
-default_op.boundary_stiffness_multiplier = 1;
-default_op.rayleigh_coefs = [0 0];
-%Signal options
-default_op.horizontal_src = 0;
-%Output
-default_op.geometry = 0;
-default_op.run_fea = 1;
-default_op.plot_sim_data = 1;
-default_op.plot_exp_data = 1;
-default_op.animate = 1;
+default_op.water_rho_multiplier = 1; %1 is default
+%   density
+default_op.ply0_rho_multiplier = 1;
+default_op.ply90_rho_multiplier = 1;
+%   stiffness
+default_op.ply90_D_multiplier = 1;
+default_op.ply0_D_multiplier = 1;
+default_op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
+default_op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
+%   damping
+default_op.rayleigh_quality_factor = inf; %inf disables damping
+default_op.rayleigh_coefs = [0 1/(2*pi*op.centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
+%Interply boundary options
+default_op.interply_layer1 = 'resin';
+default_op.interply_layer2 = 'resin';
+default_op.interply_boundary = 1; %1 is default
+default_op.interply_midway_boundary = 1; %1 is deafult
+default_op.interply_every_layer = 1;
+default_op.interply_rho_multiplier = 1;
+default_op.interply_D_multiplier = 1;
+%Water boundary
+default_op.water_bdry_thickness_perc = 0.25; %0.25 is default (>abs_bdry_thickness_perc)
+default_op.upper_water_present = 0;
+default_op.lower_water_present = 1;
+default_op.water_rho_multiplier = 1;
+%Location of transducer in water
+default_op.water_interface_perc = 0; %0-1 (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
+default_op.water_interface_single = 0; %0 or 1 (1 separates transducer from specimen by 1 element)
 
-op = fn_set_default_fields(op, default_op);
+%% Set default options
+op = fn_set_default_fields(op, default_op, true); %true to print non-default options
 
 %% Validate input
 
@@ -65,8 +70,8 @@ elseif op.abs_bdry_thickness_perc >= op.water_bdry_thickness_perc
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
 end
 %Ply options
-if op.interply_boundary == 0 && (op.interply_midway_boundary == 1 || op.interply_every_layer == 1)
-    error('Option error: set interply_boundary = 1')
+if op.n_plys_per_type == 0
+    error('Option error: n_plys_per_type must be an integer > 0')
 end
 %Water options
 if op.water_interface_perc && op.water_interface_single
@@ -77,18 +82,6 @@ elseif (op.lower_water_present || op.upper_water_present) && ~op.water_bdry_thic
     error('Option Error: set op.water_bdry_thickness_perc > 0')
 elseif (~op.lower_water_present && ~op.upper_water_present) && op.water_bdry_thickness_perc
     error('Option Error: set op.water_bdry_thickness_perc = 0')
-end
-%Output options
-if (op.animate || op.plot_sim_data) && ~op.run_fea
-    error('Option Error: set run_fea = 1 for results')
-end
-
-%% If Geometry = 1 then just plot geometry
-if op.geometry
-    op.run_fea = 0;
-    op.plot_sim_data = 0;
-    op.plot_exp_data = 0;
-    op.animate = 0;
 end
 
 end
