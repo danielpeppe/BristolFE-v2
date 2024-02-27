@@ -122,8 +122,8 @@ if ~upper_water_present
                                           1 1
                                          -1 1]; %NB: y-coords have safety margin here
     [in, ~] = fn_elements_in_region(mod, bdry_pts);
-    if find(mod.el_mat_i(in,:) == 6)
-        error('Upper water layer present in model, even though op.upper_water_present = 0 (assuming water index = 6)')
+    if find(mod.el_mat_i(in,:) == fn_matl_i(matls,'water'))
+        error('Upper water layer present in model, even though op.upper_water_present = 0')
     end
 end
 
