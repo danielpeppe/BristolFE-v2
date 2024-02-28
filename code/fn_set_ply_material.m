@@ -58,7 +58,7 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
     for layer_in_type = 1:n_plys_per_type
         target_layer = (ply_type - 1)*n_plys_per_type + layer_in_type;
         %Stay close to true ply layer height using upper and lower heights
-        true_height = specimen_height_from_bottom + (target_layer - 1)*ply_height;
+        true_height = sbp(1,2) + (target_layer - 1)*ply_height;
         if height_completed > true_height
             ply_target_height = ply_height_lower;
         else
