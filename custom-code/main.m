@@ -23,17 +23,19 @@ op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 op.layer1 = 'ply90';
 op.layer2 = 'ply0';
 %Ply options
+op.n_ply_layers = 32;
 op.n_plys_per_type = 2;
+op.ply_symmetry = 1;
 %   density
-op.ply0_rho_multiplier = 1;
-op.ply90_rho_multiplier = 1;
+% op.ply0_rho_multiplier = 1;
+% op.ply90_rho_multiplier = 1;
 %   stiffness
-op.ply90_D_multiplier = 1;
-op.ply0_D_multiplier = 1;
+% op.ply90_D_multiplier = 1;
+% op.ply0_D_multiplier = 1;
 op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
 op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
 %Damping options
-op.rayleigh_quality_factor = inf; %inf disables damping
+op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping)
 op.rayleigh_coefs = [0 1/(2*pi*op.centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
 op.ply90_rayleigh_coefs = op.rayleigh_coefs;
 op.ply0_rayleigh_coefs = op.rayleigh_coefs;
@@ -41,10 +43,14 @@ op.ply0_rayleigh_coefs = op.rayleigh_coefs;
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
 op.interply_boundary = 1; %1 is default
-op.interply_midway_boundary = 1; %1 is deafult
-op.interply_every_layer = 1;
-op.interply_rho_multiplier = 0.8;
-op.interply_D_multiplier = 1;
+op.interply_first_layer = 0;
+op.interply_last_layer = 1;
+op.interply_rho_multiplier = 1;
+% op.interply_D_multiplier = 1;
+%C plys
+op.interply_b = 'resinb';
+op.resinb_rho_multiplier = 1;
+op.resinb_D_multiplier = 1;
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 
 %% OTHER OPTIONS
@@ -54,11 +60,11 @@ op.water_interface_single = 0;
 op.separate_transmitter = 0; %by 1 element
 op.separate_receiver = 0;
 %Sim options
-fe_options.field_output_every_n_frames = 100; %10 or inf is default (inf = no field output)
+fe_options.field_output_every_n_frames = 30; %10 or inf is default (inf = no field output)
 max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
 op.aperture_n_els = 8; %number of elements
 %Output
-geometry = 0; %disables other outputs
+geometry = 1; %disables other outputs
 run_fea = 1;
 plot_sim_data = 1;
 plot_exp_data = 1;
@@ -99,6 +105,11 @@ mat.ply90b = mat.ply90;
 mat.ply90b.rho = mat.ply90.rho * op.interply_rho_multiplier;
 mat.ply90b.D = mat.ply90.D * op.interply_D_multiplier;
 mat.ply90b.col = hsv2rgb([.40,.30,.60]);
+%Plys not in between plys
+mat.resinb = mat.resin;
+mat.resin.col = hsv2rgb([.50,.75,.60]);
+mat.resinb.rbo = mat.resin.rho * op.resinb_rho_multiplier;
+mat.resinb.D = mat.resin.D * op.resinb_D_multiplier;
 %Water
 % For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
 % calcualted here from ultrasonic velocity (1500) and density (1000)
@@ -164,7 +175,12 @@ if op.solid_specimen
     mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i('steel'));
 end
 if op.composite_specimen
-    [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
+    if op.upper_water_present
+        [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
+    else
+        %v2 does not suppot op.upper_water_present
+        [mod, new_top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specimen_brdy_pts, model_size_h);
+    end
 end
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
