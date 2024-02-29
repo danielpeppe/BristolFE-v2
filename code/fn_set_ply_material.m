@@ -2,6 +2,8 @@ function [mod, top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_b
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
+fprintf("Set Ply Materials (v1)\n")
+
 %Define and declare options used
 n_ply_layers = op.n_ply_layers;
 n_plys_per_type = op.n_plys_per_type;
@@ -27,12 +29,11 @@ ply_height_lower = ply_height - height_offset;
 ply_height_upper = ply_height + (el_height - height_offset);
 
 %Calculate specimen height so that it is a multiple of element layers
-specimen_offset = rem(sbp(1,2),el_height);
-specimen_height_from_bottom = sbp(1,2) - specimen_offset;
+specimen_height_offset = rem(sbp(1,2), el_height);
+specimen_height_from_bottom = sbp(1,2) - specimen_height_offset;
 specimen_width = specimen_brdy_pts(2,1);
-%Apply margin to x so that -ve x values are captured, also ensures last
-%layer leaves no water if upper water layer is present
-safety_margin_perc = 0.3;
+%Apply margin to x so that -ve x values are captured
+safety_margin_perc = 0.3; %arbitrary
 safety_margin = specimen_width * safety_margin_perc;
 
 %Assign materials
