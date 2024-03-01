@@ -5,6 +5,9 @@ function op = fn_set_options(op)
 %Model
 default_op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
 default_op.model_size_w_multiplier = 1.5;
+%Resolution
+default_op.els_per_wavelength = 30; %10 is default (increases are non-linear)
+default_op.time_step_safety_factor = 3; %3 is default
 %Signal options
 default_op.centre_freq = 5e6;
 default_op.horizontal_src = 0;
@@ -63,10 +66,20 @@ op = fn_set_default_fields(op, default_op, true); %true to print non-default opt
 
 %% Validate input
 
+%Resolution options
+if op.els_per_wavelength < 30
+    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    disp('CAUTION: els_per_wavelength < 30')
+    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+elseif op.time_step_safety_factor < 3
+    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    disp('CAUTION: time_step_safety_factor < 3')
+    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+end
 %Input options
 if op.solid_specimen && op.composite_specimen
     error('Option Error: choose solid_specimen or composite_specimen')
-elseif op.abs_bdry_thickness_perc >= op.water_bdry_thickness_perc
+elseif (op.lower_water_present || op.upper_water_present) && (op.abs_bdry_thickness_perc >= op.water_bdry_thickness_perc)
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
     disp('CAUTION: absorbing boundary >= water boundary')
     disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
