@@ -18,6 +18,13 @@ ply_symmetry = op.ply_symmetry;
 interply_boundary = op.interply_boundary;
 interply_first_layer = op.interply_first_layer;
 interply_last_layer = op.interply_last_layer;
+%Define material indices of composite layers
+layer1_i = fn_matl_i(matls, op.layer1);
+layer2_i = fn_matl_i(matls, op.layer2);
+interply_layer1_i = fn_matl_i(matls, op.interply_layer1);
+interply_layer2_i = fn_matl_i(matls, op.interply_layer2);
+intraply_layer1_i = fn_matl_i(matls, op.intraply_layer1);
+intraply_layer2_i = fn_matl_i(matls, op.intraply_layer2);
 %Validate input
 if rem(n_ply_layers, 2)
     error("n_ply_layers must be even")
@@ -29,21 +36,14 @@ if abs(interply_last_layer) > 1 || abs(interply_first_layer) > 1
     error('Interply_last/first_layer have to be either 0 or 1')
 end
 
-%Define material indices of composite layers
-layer1_i = fn_matl_i(matls, op.layer1);
-layer2_i = fn_matl_i(matls, op.layer2);
-interply_layer1_i = fn_matl_i(matls, op.interply_layer1);
-interply_layer2_i = fn_matl_i(matls, op.interply_layer2);
-interply_b_i = fn_matl_i(matls, op.interply_b);
-
 %Calculate ply layer heights so ply material is applied to specific layers
 el_height = mod.el_height; %Calculated in fn_isometric_structured mesh
 n_interply_layers = (n_ply_layers - 1) + interply_last_layer + interply_first_layer;
 ply_height = (geom.specimen_height - n_interply_layers*el_height)/n_ply_layers;
-height_offset = rem(ply_height,el_height);
+height_offset = rem(ply_height, el_height);
 %Alternate between upper and lower ply heights
 ply_height_lower = ply_height - height_offset;
-ply_height_upper = ply_height + (el_height - height_offset);
+ply_height_upper = ply_height_lower + el_height;
 
 % figure;
 % %Display options
@@ -63,10 +63,12 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         %first material
         matl_i = layer1_i;
         interply_matl_i = interply_layer1_i;
+        intraply_matl_i = intraply_layer1_i;
     else
         %second material
         matl_i = layer2_i;
         interply_matl_i = interply_layer2_i;
+        intraply_matl_i = intraply_layer2_i;
     end
     %Apply resin to first layer if enabled
     if interply_boundary && interply_first_layer && height_completed == 0
@@ -98,12 +100,13 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         %Set interply boundaries if enabled
         if interply_boundary
             if layer_in_type < n_plys_per_type || (ply_symmetry && (target_layer == n_ply_layers/2))
+                %Set intralayer boundary
                 mod = set_target_layer_material(mod, geom, interply_matl_i, el_height, height_completed);
                 %Update height again
                 height_completed = height_completed + el_height;
             elseif layer_in_type == n_plys_per_type && ~(interply_last_layer == 0 && target_layer == n_ply_layers) %weird logic but it works!
-                interply_matl_i = interply_b_i;
-                mod = set_target_layer_material(mod, geom, interply_matl_i, el_height, height_completed);
+                %Set interlayer boundary
+                mod = set_target_layer_material(mod, geom, intraply_matl_i, el_height, height_completed);
                 %Update height again
                 height_completed = height_completed + el_height;
             end
