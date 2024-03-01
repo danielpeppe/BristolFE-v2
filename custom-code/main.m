@@ -11,7 +11,7 @@ load('g4-s8_x-8000_z0_025.mat','exp_data');
 
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 %Resolution
-op.els_per_wavelength = 5; %10 is default (increases are non-linear)
+op.els_per_wavelength = 30; %10 is default (increases are non-linear)
 op.time_step_safety_factor = 3; %3 is default (ensure reflections from 'unstable energy expansion' are avoided)
 %Model options
 op.model_size_w_multiplier = 1.5; %1.5 is default
@@ -38,7 +38,7 @@ op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping)
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
 op.interply_boundary = 1; %1 is default
-op.interply_first_layer = 1;
+op.interply_first_layer = 0;
 op.interply_last_layer = 1;
 op.interply_rho_multiplier = 1;
 % op.interply_D_multiplier = 1;
@@ -49,97 +49,109 @@ op.intraply_rho_multiplier = 1;
 op.intraply_D_multiplier = 1;
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 
-%Signal
-op_main.centre_freq = exp_data.array.centre_freq; %5e6 is default
-op_main.no_cycles = 4; %4 is default
-%Sim options
-op_main.max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
-fe_options.field_output_every_n_frames = 30; %10 or inf is default (inf = no field output)
-
 %Paul demo
 op.upper_water_present = 0;
 op.water_interface_single = 0;
 op.separate_transmitter = 0; %by 1 element
 op.separate_receiver = 0;
 
-%% OUTPUT OPTIONS
+%% SIM AND OUTPUT OPTIONS
+
+%Signal
+op_main.centre_freq = exp_data.array.centre_freq; %5e6 is default
+op_main.no_cycles = 4; %4 is default
+op_main.max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
 %Output for each sim
-op_output.geometry = 0;
 op_output.justgeometry = 0; %disables other outputs
+op_output.geometry = 0;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 0;
 op_output.plot_exp_data = 0;
 op_output.animate = 0;
-%output for final results
-op_output.plot_final_sim_data = 1;
-op_output.plot_final_exp_data = 1;
+%Animation options
+anim_options.repeat_n_times = 10;
+fe_options.field_output_every_n_frames = inf; %10 or inf is default (inf = no field output)
 
 %% RUN SIM
 
-params = [inf 1 0.1 0.05];
-n_params = length(params);
-res = cell(1,n_params);
-steps = {1,n_params};
-for i = 1:n_params
-    p = params(i);
-    op.rayleigh_quality_factor = p; %inf disables damping (0.5 is light damping)
+%Define input parameters
+% params = 0; %initialise
+% params = [1 0];
+% params = [20 30]; %els_per_wavelength
+params = [3 6 9]; %time_safety_factor
+% params = [inf 1]; %damping
+
+%Iterate sim for number of parameters
+if ~params
+    fprintf("--------------------------- RUNNNING NEW SIM -----------------------------------\n")
     %Set default options and validate
     op = fn_set_options(op);
+    fprintf("--------------------------------------------------------------------------------\n")
     %Get results
-    [res{1,i}, steps{1,i}] = run_sim(op, op_main, op_output, fe_options, exp_data);
-end
-
-%% PLOT RESULTS
-
-figure;
-FntN='Times New Roman';
-str = 'placeholder';
-FntS = 13;
-ax1 = gca;
-
-%Iterate over sim results
-for i = 1:n_params
-    res_sum_dsps = sum(res{i}{1}.dsps); %tmp for readability
-    %Plot final results
-    if op_output.plot_final_sim_data
-        plot(steps{i}{1}.load.time, res_sum_dsps,'DisplayName',string(params(i)));
+    [res{1}, steps{1}] = run_sim(op, op_main, op_output, fe_options, anim_options, exp_data);
+else
+    n_params = length(params);
+    res = cell(1,n_params);
+    steps = {1,n_params};
+    for i = 1:n_params
+        fprintf("--------------------------- RUNNNING NEW SIM -----------------------------------\n")
+        %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
+        % op.rayleigh_quality_factor = params(i); %inf disables damping (0.5 is light damping)
+        % op.interply_last_layer = params(i);
+        % op.els_per_wavelength = params(i);
+        op.time_step_safety_factor = params(i);
+        %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
+        %Set default options and validate
+        op = fn_set_options(op);
+        fprintf("--------------------------------------------------------------------------------\n")
+        %Get results
+        [res{1,i}, steps{1,i}] = run_sim(op, op_main, op_output, fe_options, anim_options, exp_data);
     end
-    hold on
-end
-%Plot experimental data on top
-if op_output.plot_final_exp_data
-    hold on
-    %Get time data for aperture
+    
+    %Plot Final Results
+    figure;
+    FntN='Times New Roman';
+    FntS = 13;
+    ax1 = gca;
+    %Get exp time data for aperture (needed for scaling)
     aperture = 1:op.aperture_n_els;
     aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
-    aperture_time_data = sum(exp_data.time_data(:, aperture_data), 2);
-    %Scale dsp data
-    scale_dsp = max(abs(res_sum_dsps))/max(abs(aperture_time_data)); %Scale exp response to match sim response
-    translate_time = 1.194e-05; %Start of exp response
+    aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
+    %Iterate over sim results
+    for i = 1:n_params
+        res_sum_dsps = sum(res{1,i}{1}.dsps); %tmp for readability
+        %Scale sim data to exp data
+        scale_dsp = max(abs(aperture_dsp_data))/max(abs(res_sum_dsps)); %Scale exp response to match sim response
+        translate_time = 1.194e-05; %Start of exp response
+        %Plot final results
+        plot(steps{1,i}{1}.load.time + translate_time, res_sum_dsps*scale_dsp,'DisplayName',string(params(i)));
+        hold on
+    end
+    %Plot experimental data on top
+    hold on
     %Plot
-    color = hsv2rgb([.95,1,1]);
-    plot(exp_data.time - translate_time, scale_dsp*aperture_time_data, 'Color', color,'LineStyle',':','DisplayName','target');
+    plot(exp_data.time, aperture_dsp_data, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
+    hold off
+    
+    xlabel('Time (s)')
+    ylabel('Magnitude (-)')
+    xlim([0 + translate_time,4e-6 + translate_time])
+    ylim([min(aperture_dsp_data),max(aperture_dsp_data)])
+    xcorr = 2; ycorr = 2;
+    w = 30; h = 20;
+    osx = 1.8; osy = 1.8;
+    set(gcf,'Units','centimeters','Position',[xcorr ycorr w+1.75*osx h+1.75*osy])
+    set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k',})
+    set(gca,'Units','centimeters','Position',[osx osy w h],'FontName',FntN,'fontsize',FntS,'XMinorTick','on','YMinorTick','on')
+    legend('Location','south'); legend boxoff
     hold off
 end
 
-xlabel('Time (s)')
-ylabel('Magnitude (-)')
 
-xcorr = 2;
-ycorr = 2;
-w = 25;
-h = 30;
-osx = 1.8;
-osy = 1.8;
-set(gcf,'Units','centimeters','Position',[xcorr ycorr w+1.75*osx h+1.75*osy])
-set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k',})
-set(gca,'Units','centimeters','Position',[osx osy w h],'FontName',FntN,'fontsize',FntS,'XMinorTick','on','YMinorTick','on')
-xlim([0,4e-6])
-legend()
-legend boxoff
-hold off
+function [res, steps] = run_sim(op, op_main, op_output, fe_options, anim_options, exp_data)
 
-function [res, steps] = run_sim(op, op_main, op_output, fe_options, exp_data)
+
+%% REDEFINE OPTIONS
 
 centre_freq = op_main.centre_freq;
 no_cycles = op_main.no_cycles;
@@ -152,7 +164,7 @@ plot_sim_data = op_output.plot_sim_data;
 plot_exp_data = op_output.plot_exp_data;
 animate = op_output.animate;
 
-%% DEFINE MATERIALS
+%% DEFINE CORE MATERIALS
 
 %Define rayleigh coefs
 rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
@@ -160,7 +172,7 @@ rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[
 %ply90
 E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 0.436;
 ply_orientation = 90; %rotation of ply (0 or 90 along z-axis)
-mat.ply90.rho = 1570 * op.ply90_rho_multiplier;
+mat.ply90.rho = 1800 * op.ply90_rho_multiplier;
 mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply90_shear_wave_velocity_by_E_t, G_t, v_t);
 mat.ply90.rayleigh_coefs = rayleigh_coefs;
 mat.ply90.col = hsv2rgb([3/4,0.3,0.80]); %purple
@@ -168,6 +180,7 @@ mat.ply90.el_typ = 'CPE3';
 %ply0
 ply_orientation = 0;
 mat.ply0.rho = 1570 * op.ply0_rho_multiplier;
+mat.ply0.rho = 1800 * op.ply0_rho_multiplier;
 mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply0_shear_wave_velocity_by_E_t, G_t, v_t);
 mat.ply0.rayleigh_coefs = rayleigh_coefs;
 mat.ply0.col = hsv2rgb([1/4,0,0.80]);
@@ -177,6 +190,9 @@ mat.resin.rho = 1301 * op.interply_rho_multiplier;
 mat.resin.D = op.interply_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, 0.37); 
 mat.resin.col = hsv2rgb([.50,.75,.60]);
 mat.resin.el_typ = 'CPE3';
+
+%% DEFINE BOUNDARY MATERIALS
+
 %ply0 boundary
 mat.ply0b = mat.ply0;
 mat.ply0b.rho = mat.ply0.rho * op.interply_rho_multiplier;
@@ -243,7 +259,7 @@ abs_bdry_pts = [
 
 %% DEFINE MESH
 
-%Work out element size
+%Work out element size (slightly different from actual element size)
 el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength);
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(bdry_pts, el_size);
@@ -270,6 +286,7 @@ mod = fn_add_fluid_solid_interface_els(mod, matls);
 mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
 %% ADD POROSITY (WIP)
+
 % n_pores = 10;
 % mod = fn_add_porosity(mod, n_pores);
 
@@ -352,6 +369,7 @@ display_options.node_sets_to_plot(2).col = 'b.';
 if justgeometry
     figure; 
     h_patch = fn_show_geometry(mod, matls, display_options);
+    res{1} = {0};
     return
 elseif geometry
     figure; 
@@ -366,7 +384,6 @@ if run_fea
     fe_options.damping_power_law = 3;
     fe_options.max_damping = 3.1415e+07;
     fe_options.max_stiffness_reduction = 0.01;
-    
     %Run model
     res = fn_BristolFE_v2(mod, matls, steps, fe_options);
     res_sum_dsps = sum(res{1}.dsps); %tmp for readability
@@ -389,20 +406,21 @@ if plot_exp_data
     %Get time data for aperture
     aperture = 1:op.aperture_n_els;
     aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
-    aperture_time_data = sum(exp_data.time_data(:, aperture_data), 2);
+    aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
     %Scale dsp data
-    scale_dsp = max(abs(res_sum_dsps))/max(abs(aperture_time_data)); %Scale exp response to match sim response
+    scale_dsp = max(abs(res_sum_dsps))/max(abs(aperture_dsp_data)); %Scale exp response to match sim response
     translate_time = 1.194e-05; %Start of exp response
     %Plot
-    plot(exp_data.time - translate_time, scale_dsp*aperture_time_data, 'Color', 'r');
+    plot(exp_data.time - translate_time, scale_dsp*aperture_dsp_data, 'Color', color,'LineStyle',':','DisplayName','target');
     hold off
 end
 
 %animate result
-if animate
+if animate && fe_options.field_output_every_n_frames == inf
+    error('fe_options.field_output_every_n_frames == inf, so no animation will be shown')
+elseif animate
     figure;
     h_patch = fn_show_geometry(mod, matls, display_options);
-    anim_options.repeat_n_times = 10;
     anim_options.norm_val = abs(median(res_sum_dsps)); %must be positive
     fn_run_animation(h_patch, res{1}.fld, anim_options);
 end
