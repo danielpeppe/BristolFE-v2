@@ -33,20 +33,22 @@ default_op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
 default_op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
 %   damping
 default_op.rayleigh_quality_factor = inf; %inf disables damping
-default_op.rayleigh_coefs = [0 1/(2*pi*op.centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
-default_op.ply90_rayleigh_coefs = op.rayleigh_coefs;
-default_op.ply0_rayleigh_coefs = op.rayleigh_coefs;
 %Interply boundary options
 default_op.interply_layer1 = 'resin';
 default_op.interply_layer2 = 'resin';
 default_op.interply_boundary = 1; %1 is default
 default_op.interply_first_layer = 0;
-default_op.interply_last_layer = 0;
+default_op.interply_last_layer = 1;
 default_op.interply_rho_multiplier = 1;
 default_op.interply_D_multiplier = 1;
 %Legacy interply options for fn_set_ply_matls (v1)
 default_op.interply_midway_boundary = 1;
 default_op.interply_every_layer = 1;
+%Intraply boundary options
+default_op.intraply_layer1 = 'resinb';
+default_op.intraply_layer2 = 'resinb';
+default_op.intraply_rho_multiplier = 1;
+default_op.intraply_D_multiplier = 1;
 %Water boundary
 default_op.water_bdry_thickness_perc = 0.25; %0.25 is default (>abs_bdry_thickness_perc)
 default_op.upper_water_present = 0;
