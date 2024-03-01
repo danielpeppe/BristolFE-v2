@@ -32,13 +32,21 @@ end
 if op.upper_water_present
     error('fn_set_ply_material_v2 does not support op.upper_water_present, use v1')
 end
+if ~interply_boundary
+    interply_first_layer = 0;
+    interply_last_layer = 0;
+end
 if abs(interply_last_layer) > 1 || abs(interply_first_layer) > 1
     error('Interply_last/first_layer have to be either 0 or 1')
 end
 
 %Calculate ply layer heights so ply material is applied to specific layers
 el_height = mod.el_height; %Calculated in fn_isometric_structured mesh
-n_interply_layers = (n_ply_layers - 1) + interply_last_layer + interply_first_layer;
+if op.interply_boundary
+    n_interply_layers = (n_ply_layers - 1) + interply_last_layer + interply_first_layer;
+else
+    n_interply_layers = 0;
+end
 ply_height = (geom.specimen_height - n_interply_layers*el_height)/n_ply_layers;
 height_offset = rem(ply_height, el_height);
 %Alternate between upper and lower ply heights
