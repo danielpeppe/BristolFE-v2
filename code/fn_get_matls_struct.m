@@ -14,7 +14,24 @@ for i = 1:numel(matls_names)
     for j = 1:numel(matls_fields)
         matls(i).(matls_fields{j}) = mat.(matls_names{i}).(matls_fields{j});
     end
+    %Scale values according to scale of model
+    if isfield(matls(i), 'rho')
+        matls(i).rho = matls(i).rho / op.scale_model^3;
+    end
+    if isfield(matls(i), 'D')
+        matls(i).D = matls(i).D / op.scale_model^2;
+    end
+    if isfield(matls(i), 'rayleigh_coefs')
+        matls(i).rayleigh_coefs = matls(i).rayleigh_coefs / op.scale_model;
+    end
+    %Check fields are named correctly
     matls(i).name = matls_names{i};
+    if ~isfield(matls,'rho') || ~isfield(matls,'D') || ~isfield(matls,'name') ||...
+            ~isfield(matls,'rayleigh_coefs') || ~isfield(matls,'col') || ~isfield(matls,'el_typ')
+        disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+        disp('CAUTION: Unknown material field (not rho, D, rayleigh_coefs, col, or el_typ)')
+        disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    end
 end
 end
 
