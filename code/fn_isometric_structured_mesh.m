@@ -13,6 +13,9 @@ function mod = fn_isometric_structured_mesh(bdry_pts, el_size)
 %       material indices assigned elsewhere if more than one type of
 %       material is used in model
 %--------------------------------------------------------------------------
+%Ensure bdry_pts is a double precision matrix
+bdry_pts = double(bdry_pts);
+
 %Figure out a bounding rectangle for whole shape
 crnr_pts = [min(bdry_pts); max(bdry_pts)];
 

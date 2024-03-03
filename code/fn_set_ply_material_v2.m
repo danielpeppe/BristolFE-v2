@@ -3,6 +3,8 @@ function [mod, top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specime
 %   Detailed explanation goes here
 
 fprintf("Set Ply Materials (v2)\n")
+%Ensure specimen_brdy_pts is a double precision matrix
+specimen_brdy_pts = double(specimen_brdy_pts);
 
 %Put key geometry consts in a struct
 geom.model_height = model_height;
@@ -39,7 +41,6 @@ end
 if abs(interply_last_layer) > 1 || abs(interply_first_layer) > 1
     error('Interply_last/first_layer have to be either 0 or 1')
 end
-
 %Calculate ply layer heights so ply material is applied to specific layers
 el_height = mod.el_height; %Calculated in fn_isometric_structured mesh
 if op.interply_boundary
