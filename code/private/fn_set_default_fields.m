@@ -44,12 +44,12 @@ if using_for_op
             % for numeric values
             if isnumeric(new_struct_value)
                 if default_value ~= new_struct_value
-                    fprintf('op.%s: %.4f\n', new_struct_fieldnames{ii}, new_struct_value);
+                    fprintf('op.%s: %.4f (default: %.4f)\n', new_struct_fieldnames{ii}, new_struct_value, default_value);
                 end
             
             elseif ischar(new_struct_value) || isstring(new_struct_value)
                 if ~strcmpi(default_value, new_struct_value)
-                    fprintf('op.%s: %s\n', new_struct_fieldnames{ii}, new_struct_value);
+                    fprintf('op.%s: %s (default: %s)\n', new_struct_fieldnames{ii}, new_struct_value, default_value);
                 end
             % % for matrices TBC
             % elseif ismatrix(new_struct_value) && ~(ischar(new_struct_value) || isstring(new_struct_value))
