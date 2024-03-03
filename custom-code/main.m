@@ -11,36 +11,25 @@ load('g4-s8_x-8000_z0_025.mat','exp_data');
 
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 %Resolution
-op.els_per_wavelength = 10; %10 is default (increases are non-linear)
+op.els_per_wavelength = 30; %10 is default (increases are non-linear)
 op.time_step_safety_factor = 3; %3 is default (ensure reflections from 'unstable energy expansion' are avoided)
-op.abs_bdry_thickness_perc = 0;
 %Model options
 op.aperture_n_els = 8; %number of elements
 %Water options
-op.upper_water_present = 0;
-% op.water_bdry_thickness_perc = 0.4;
-% op.abs_bdry_thickness_perc = 0.2;
-% op.model_size_w_multiplier = 1.5; %relative to aperture size
-
 op.water_rho_multiplier = 1;
 op.water_D_multiplier = 1;
-%Solid water options
-op.solidwater = 0;
-op.solidwater_rho_multiplier = 1;
-op.solidwater_D_multiplier = 1;
 %Composite specimen options
 op.layer1 = 'ply90';
 op.layer2 = 'ply0';
-%Ply options
 op.n_ply_layers = 32;
 op.n_plys_per_type = 2;
 op.ply_symmetry = 1;
 %   density
-% op.ply0_rho_multiplier = 1;
-% op.ply90_rho_multiplier = 1;
+op.ply0_rho_multiplier = 1;
+op.ply90_rho_multiplier = 1;
 %   stiffness
-% op.ply90_D_multiplier = 1;
-% op.ply0_D_multiplier = 1;
+op.ply90_D_multiplier = 1;
+op.ply0_D_multiplier = 1;
 op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
 op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
 %Damping options
@@ -52,7 +41,7 @@ op.interply_boundary = 1; %1 is default
 op.interply_first_layer = 1; %v2
 op.interply_last_layer = 1; %v2
 op.interply_rho_multiplier = 1;
-% op.interply_D_multiplier = 1;
+op.interply_D_multiplier = 1; %DOESNT WORK WELL
 %Intraply boundary options
 op.intraply_layer1 = 'resinb'; %v2
 op.intraply_layer2 = 'resinb'; %v2
@@ -60,25 +49,19 @@ op.intraply_rho_multiplier = 1; %v2
 op.intraply_D_multiplier = 1; %v2
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 
-%Paul demo
-op.separate_transmitter = 0; %by 1 element
-op.separate_receiver = 0;
-
-%% SIM AND OUTPUT OPTIONS
+%% OTHER OPTIONS
 
 %Signal
-op.scale_model = 1000;
-op.specimen_size = 4;
-op_main.centre_freq = exp_data.array.centre_freq; %5e6 is default
-op_main.no_cycles = 4; %4 is default
-op_main.max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
+op_alt.centre_freq = exp_data.array.centre_freq; %5e6 is default
+op_alt.no_cycles = 4; %4 is default
+op_alt.max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
 %Output for each sim
-op_output.justgeometry = 0; %disables other outputs
-op_output.geometry = 0;
-op_output.run_fea = 1;
-op_output.plot_sim_data = 0;
-op_output.plot_exp_data = 0;
-op_output.animate = 10;
+op_alt.justgeometry = 0; %disables other outputs
+op_alt.geometry = 0;
+op_alt.run_fea = 1;
+op_alt.plot_sim_data = 0;
+op_alt.plot_exp_data = 0;
+op_alt.animate = 0;
 %Animation options
 anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
@@ -87,27 +70,27 @@ fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no fie
 
 %Define input parameters
 params = 0; %initialise
-% params = [1 0];
+params = [1 0];
 % params = [20 30]; %els_per_wavelength
 % params = [inf 1]; %damping
 
 %Iterate sim for number of parameters
 if ~params
-    op_output.plot_sim_data = 1;
-    op_output.plot_exp_data = 1;
+    op_alt.plot_sim_data = 1;
+    op_alt.plot_exp_data = 1;
 
-    fprintf("--------------------------- RUNNNING NEW SIM -----------------------------------\n")
+    fprintf("--------------------------- RUNNNING ONE SIM -----------------------------------\n")
     %Set default options and validate
     op = fn_set_options(op);
     fprintf("--------------------------------------------------------------------------------\n")
     %Get results
-    [res{1}, steps{1}] = run_sim(op, op_main, op_output, fe_options, anim_options, exp_data);
+    [res{1}, steps{1}] = run_sim(op, op_alt, fe_options, anim_options, exp_data);
 else
-    n_params = length(params);
-    res = cell(1,n_params);
-    steps = {1,n_params};
-    for i = 1:n_params
-        fprintf("--------------------------- RUNNNING NEW SIM -----------------------------------\n")
+    n = length(params);
+    res = cell(1,n);
+    steps = {1,n};
+    for i = 1:n
+        fprintf("--------------------------- RUNNNING MULTIPLE SIMS -----------------------------------\n")
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
         % op.rayleigh_quality_factor = params(i); %inf disables damping (0.5 is light damping)
         op.interply_first_layer = params(i);
@@ -115,72 +98,38 @@ else
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         %Set default options and validate
         op = fn_set_options(op);
-        fprintf("--------------------------------------------------------------------------------\n")
+        fprintf("--------------------------------------------------------------------------------------\n")
         %Get results
-        [res{1,i}, steps{1,i}] = run_sim(op, op_main, op_output, fe_options, anim_options, exp_data);
+        [res{1,i}, steps{1,i}] = run_sim(op, op_alt, fe_options, anim_options, exp_data);
     end
     
-    %Plot Final Results
-    figure;
-    FntN='Times New Roman';
-    FntS = 13;
-    ax1 = gca;
-    %Get exp time data for aperture (needed for scaling)
-    aperture = 1:op.aperture_n_els;
-    aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
-    aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
-    %Iterate over sim results
-    for i = 1:n_params
-        res_sum_dsps = sum(res{1,i}{1}.dsps); %tmp for readability
-        %Scale sim data to exp data
-        scale_dsp = max(abs(aperture_dsp_data))/max(abs(res_sum_dsps)); %Scale exp response to match sim response
-        translate_time = 1.194e-05; %Start of exp response
-        %Plot final results
-        plot(steps{1,i}{1}.load.time + translate_time, res_sum_dsps*scale_dsp,'DisplayName',string(params(i)));
-        hold on
-    end
-    %Plot experimental data on top
-    hold on
-    %Plot
-    plot(exp_data.time, aperture_dsp_data, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
-    hold off
-    
-    xlabel('Time (s)')
-    ylabel('Magnitude (-)')
-    xlim([0 + translate_time,4e-6 + translate_time])
-    ylim([min(aperture_dsp_data),max(aperture_dsp_data)])
-    xcorr = 2; ycorr = 2;
-    w = 30; h = 20;
-    osx = 1.8; osy = 1.8;
-    set(gcf,'Units','centimeters','Position',[xcorr ycorr w+1.75*osx h+1.75*osy])
-    set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k',})
-    set(gca,'Units','centimeters','Position',[osx osy w h],'FontName',FntN,'fontsize',FntS,'XMinorTick','on','YMinorTick','on')
-    legend('Location','south'); legend boxoff
-    hold off
+    %Plot results
+    fn_plot_signal(op, res, steps, exp_data, params)
 end
 
 
-function [res, steps] = run_sim(op, op_main, op_output, fe_options, anim_options, exp_data)
 
 
+
+function [res, steps] = run_sim(op, op_alt, fe_options, anim_options, exp_data)
 %% REDEFINE OPTIONS
 
-centre_freq = op_main.centre_freq;
-no_cycles = op_main.no_cycles;
-max_time = op_main.max_time;
+centre_freq = op_alt.centre_freq;
+no_cycles = op_alt.no_cycles;
+max_time = op_alt.max_time;
 
-geometry = op_output.geometry;
-justgeometry = op_output.justgeometry;
-run_fea = op_output.run_fea;
-plot_sim_data = op_output.plot_sim_data;
-plot_exp_data = op_output.plot_exp_data;
-animate = op_output.animate;
+geometry = op_alt.geometry;
+justgeometry = op_alt.justgeometry;
+run_fea = op_alt.run_fea;
+plot_sim_data = op_alt.plot_sim_data;
+plot_exp_data = op_alt.plot_exp_data;
+animate = op_alt.animate;
 if animate && fe_options.field_output_every_n_frames == inf
-    error('fe_options.field_output_every_n_frames == inf, so no animation will be shown')
+    error('fe_options.field_output_every_n_frames == inf, so animation will NOT be shown')
 end
 
 
-%% DEFINE CORE MATERIALS
+%% DEFINE SPECIMEN MATERIALS
 
 %Define rayleigh coefs
 rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
@@ -231,14 +180,14 @@ mat.water.D = 1500^2 * 1000;
 mat.water.col = hsv2rgb([0.6,0.5,0.8]);
 mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
 %solid/fake water
-if op.solidwater
-    mat.solidwater.rho = 1000 * op.solidwater_rho_multiplier;
-    solidwater_K = mat.water.D;
-    solidwater_v = 0.3;
-    mat.solidwater.D = op.solidwater_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(3*solidwater_K*(1-2*solidwater_v), solidwater_v);
-    mat.solidwater.col = hsv2rgb([0.6,0.75,0.8]);
-    mat.solidwater.el_typ = 'CPE3'; %AC2D3 must be the element type for a fluid
-end
+% if op.solidwater
+%     mat.solidwater.rho = 1000 * op.solidwater_rho_multiplier;
+%     solidwater_K = mat.water.D;
+%     solidwater_v = 0.3;
+%     mat.solidwater.D = op.solidwater_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(3*solidwater_K*(1-2*solidwater_v), solidwater_v);
+%     mat.solidwater.col = hsv2rgb([0.6,0.75,0.8]);
+%     mat.solidwater.el_typ = 'CPE3'; %AC2D3 must be the element type for a fluid
+% end
 %Steel (FOR DEBUGGING)
 % mat.steel.rho = 8900; %8900
 % mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
@@ -255,12 +204,7 @@ probe_width = op.scale_model * (exp_data.array.el_xc(end) - exp_data.array.el_xc
 aperture_width = double(probe_width * op.aperture_n_els/exp_data.num_els);
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc * op.specimen_size;
-
 model_size_w = aperture_width*op.model_size_w_multiplier;
-% model_size_w = op.specimen_size * op.model_size_w_multiplier;
-% model_size_w = aperture_width * 2.5197;
-% model_size_w = 0.006000000000000;
-
 model_size_h = op.specimen_size + water_brdy_thickness * (op.upper_water_present + op.lower_water_present);
 abs_bdry_thickness = op.abs_bdry_thickness_perc * op.specimen_size;
 
@@ -278,6 +222,7 @@ specimen_brdy_pts = [
     model_size_w, wbt*op.lower_water_present
     model_size_w, wbt*op.lower_water_present + op.specimen_size
     0,            wbt*op.lower_water_present + op.specimen_size];
+
 %Define top of specimen for later use
 top_of_specimen = specimen_brdy_pts(3,2);
 
@@ -320,6 +265,7 @@ if op.composite_specimen
         [mod, new_top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specimen_brdy_pts, model_size_h);
     end
 end
+
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
 %Define the absorbing layer
