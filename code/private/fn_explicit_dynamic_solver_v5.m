@@ -122,8 +122,11 @@ end
 %Main time marching loop
 t1 = clock;
 ti_start = inf;
+
+%Progress Bar
 progressbar_checkpoint = floor(length(time)/10);
 fprintf('Percent complete: 00%')
+
 if ~isempty(forcing_indices)
     ti_start = min(min(find(sum(forcing_functions))), ti_start);
 end
@@ -172,9 +175,9 @@ for ti = ti_start:length(time)
     u_previous = u;
     u_dot_previous = u_dot;
     
-    %Show how far through calculation is
+    %Update progress bar
     if rem(ti,progressbar_checkpoint) == 0
-        percent_done = round(ti/progressbar_checkpoint)*10; %Use ti-1 to avoid 100% completion
+        percent_done = round(ti/progressbar_checkpoint)*10;
         fprintf(repmat('\b', 1, length(num2str(percent_done - 10)) + 1));
         fprintf('%d%%', percent_done);
     end
