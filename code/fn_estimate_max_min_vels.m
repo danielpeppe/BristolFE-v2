@@ -1,4 +1,4 @@
-function [mx, mn] = fn_estimate_max_min_vels(matls, scale_model)
+function [mx, mn] = fn_estimate_max_min_vels(matls, scale_units)
 v = [0,0];
 j = 1;
 for i = 1:numel(matls)
@@ -17,8 +17,8 @@ for i = 1:numel(matls)
 
     if ~isempty(s)
         s = s(abs(s) > 0);
-        v(j,1) = sqrt(min(s) / rho) * sqrt(scale_model);
-        v(j,2) = sqrt(max(s) / rho) * sqrt(scale_model);
+        v(j,1) = sqrt(min(s) / rho) * sqrt(scale_units);
+        v(j,2) = sqrt(max(s) / rho) * sqrt(scale_units);
         j = j + 1;
     end
 end

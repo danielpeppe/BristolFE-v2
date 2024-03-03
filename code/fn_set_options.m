@@ -16,7 +16,7 @@ default_op.separate_transmitter = 0; %by 1 element
 default_op.separate_receiver = 0;
 %Specimen
 default_op.specimen_size = 4e-3; %[m]
-default_op.scale_model = 1;
+default_op.scale_units = 1;
 default_op.solid_specimen = 0;
 default_op.composite_specimen = 1;
 %Composite structure

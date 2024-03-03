@@ -70,7 +70,7 @@ fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no fie
 
 %Define input parameters
 params = 0; %initialise
-params = [1 0];
+% params = [1 0];
 % params = [20 30]; %els_per_wavelength
 % params = [inf 1]; %damping
 
@@ -200,7 +200,7 @@ matls = fn_get_matls_struct(op, mat);
 %% DEFINE SHAPE OF MODEL
 
 %Define aperture size relative to exp probe
-probe_width = op.scale_model * (exp_data.array.el_xc(end) - exp_data.array.el_xc(1));
+probe_width = op.scale_units * (exp_data.array.el_xc(end) - exp_data.array.el_xc(1));
 aperture_width = double(probe_width * op.aperture_n_els/exp_data.num_els);
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc * op.specimen_size;
@@ -237,7 +237,7 @@ abs_bdry_pts = [
 %% DEFINE MESH
 
 %Work out element size (slightly different from actual element size)
-el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_model);
+el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 
@@ -329,7 +329,7 @@ steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * src_dir;
 %Also provide the time signal for the loading (if this is a vector, it will
 %be applied at all frc_nds/frc_dfs simultaneously; alternatively it can be a matrix
 %of different time signals for each frc_nds/frc_dfs
-time_step = fn_get_suitable_time_step(matls, el_size, op.scale_model, op.time_step_safety_factor);
+time_step = fn_get_suitable_time_step(matls, el_size, op.scale_units, op.time_step_safety_factor);
 steps{1}.load.time = 0: time_step:  max_time;
 steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycles);
 
@@ -369,7 +369,7 @@ if run_fea
     %Following relate to how absorbing regions are created by adding damping
     %matrix and reducing stiffness matrix to try and preserve acoustic impedance
     fe_options.damping_power_law = 3;
-    fe_options.max_damping = 3.1415e+07 / op.scale_model;
+    fe_options.max_damping = 3.1415e+07 / op.scale_units;
     fe_options.max_stiffness_reduction = 0.01;
     %Run model
     res = fn_BristolFE_v2(mod, matls, steps, fe_options);
