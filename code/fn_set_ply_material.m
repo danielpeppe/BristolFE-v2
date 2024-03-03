@@ -93,24 +93,6 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
     end
 end
 
-%%% Removing nodes instead of 'filling model height' is better, but
-%%% for some reason fn_remove_unused_nodes() isn't deleting elements at top
-%%% surface, but deletes nodes fine. Maybe because top layer isn't flat?
-% if ~upper_water_present
-%     bdry_pts = [0,               height_completed
-%                 specimen_width,  height_completed
-%                 specimen_width,  height_completed
-%                 0,               height_completed];
-%     %Apply safety margin
-%     bdry_pts = bdry_pts + safety_margin*[-1 0
-%                                           1 0
-%                                           1 1
-%                                          -1 1]; %NB: y-coords have safety margin here
-%     [in, ~] = fn_elements_in_region(mod, bdry_pts);
-%     mod.els(in, :) = [];
-%     [mod.nds, mod.els] = fn_remove_unused_nodes(mod.nds, mod.els);
-% end
-
 %% Check if there is a top layer of water if ~upper_water_present
 if ~upper_water_present
     bdry_pts = [0,               height_completed
