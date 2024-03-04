@@ -16,13 +16,13 @@ for i = 1:numel(matls_names)
     end
     %Scale values according to scale of model
     if isfield(matls(i), 'rho')
-        matls(i).rho = matls(i).rho / op.scale_model^3;
+        matls(i).rho = matls(i).rho / op.scale_units^3;
     end
     if isfield(matls(i), 'D')
-        matls(i).D = matls(i).D / op.scale_model^2;
+        matls(i).D = matls(i).D / op.scale_units^2;
     end
     if isfield(matls(i), 'rayleigh_coefs')
-        matls(i).rayleigh_coefs = matls(i).rayleigh_coefs / op.scale_model;
+        matls(i).rayleigh_coefs = matls(i).rayleigh_coefs / op.scale_units;
     end
     %Check fields are named correctly
     matls(i).name = matls_names{i};
