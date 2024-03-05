@@ -12,7 +12,7 @@ load('g4-s8_x-8000_z0_025.mat','exp_data');
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 %Resolution
 op.els_per_wavelength = 30; %10 is default (increases are non-linear)
-op.time_step_safety_factor = 3; %3 is default (ensure reflections from 'unstable energy expansion' are avoided)
+op.time_step_safety_factor = 3; %3 is default (12 if upper_water_present)
 %Model options
 op.aperture_n_els = 8; %number of elements
 %Water options
@@ -25,28 +25,23 @@ op.n_ply_layers = 32;
 op.n_plys_per_type = 2;
 op.ply_symmetry = 1;
 %   density
-op.ply0_rho_multiplier = 1;
 op.ply90_rho_multiplier = 1;
+op.ply0_rho_multiplier = 1;
 %   stiffness
 op.ply90_D_multiplier = 1;
 op.ply0_D_multiplier = 1;
-op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
-op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
+op.ply90_E_t_multiplier = 1; %1 is default
+op.ply0_E_t_multiplier = 1; %1 is default
 %Damping options
-op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping)
+op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping) (smaller = larger damping)
 %Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
 op.interply_boundary = 1; %1 is default
-op.interply_first_layer = 1; %v2
-op.interply_last_layer = 1; %v2
+op.interply_first_layer = 0; %v2
+op.interply_last_layer = 0; %v2
 op.interply_rho_multiplier = 1;
-op.interply_D_multiplier = 1; %DOESNT WORK WELL
-%Intraply boundary options
-op.intraply_layer1 = 'resinb'; %v2
-op.intraply_layer2 = 'resinb'; %v2
-op.intraply_rho_multiplier = 1; %v2
-op.intraply_D_multiplier = 1; %v2
+op.interply_D_multiplier = 1;
 %%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
 
 %% OTHER OPTIONS
@@ -56,35 +51,40 @@ op_alt.centre_freq = exp_data.array.centre_freq; %5e6 is default
 op_alt.no_cycles = 4; %4 is default
 op_alt.max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
 %Output for each sim
-op_alt.justgeometry = 0; %disables other outputs
-op_alt.geometry = 0;
-op_alt.run_fea = 1;
-op_alt.plot_sim_data = 0;
-op_alt.plot_exp_data = 0;
-op_alt.animate = 0;
+op_output.justgeometry = 0; %disables other outputs
+op_output.geometry = 0;
+op_output.run_fea = 1;
+op_output.plot_sim_data = 0;
+op_output.plot_exp_data = 0;
+op_output.animate = 1;
 %Animation options
 anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
+fe_options.use_gpu_if_present = 0;
 
 %% RUN SIM
 
 %Define input parameters
-params = 0; %initialise
+params = [];
 % params = [1 0];
-% params = [20 30]; %els_per_wavelength
+% params = [10 20 30]; %els_per_wavelength
 % params = [inf 1]; %damping
+% params = {'resin','resin';'ply90','ply0'}; %intraply layers
+% params = [1 0.95 0.9 0.85 0.8]; %stiffness (D)
+% params = {[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]};
+% params = [0.9 0.95 1 1.05 1.1];
 
 %Iterate sim for number of parameters
-if ~params
-    op_alt.plot_sim_data = 1;
-    op_alt.plot_exp_data = 1;
+if isempty(params)
+    op_output.plot_sim_data = 1;
+    op_output.plot_exp_data = 1;
 
     fprintf("--------------------------- RUNNNING ONE SIM -----------------------------------\n")
     %Set default options and validate
-    op = fn_set_options(op);
+    op = fn_set_options(op, op_output);
     fprintf("--------------------------------------------------------------------------------\n")
     %Get results
-    [res{1}, steps{1}] = run_sim(op, op_alt, fe_options, anim_options, exp_data);
+    [res{1}, steps{1}] = run_sim(op, op_output, op_alt, fe_options, anim_options, exp_data);
 else
     n = length(params);
     res = cell(1,n);
@@ -92,15 +92,19 @@ else
     for i = 1:n
         fprintf("--------------------------- RUNNNING MULTIPLE SIMS -----------------------------------\n")
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
-        % op.rayleigh_quality_factor = params(i); %inf disables damping (0.5 is light damping)
-        op.interply_first_layer = params(i);
         % op.els_per_wavelength = params(i);
+        % op.rayleigh_quality_factor = params(i); %inf disables damping (0.5 is light damping)
+        % op.interply_first_layer = params(i);
+        % op.interply_boundary = params(i);
+        % op.intraply_layer1 = params{i,1}; op.intraply_layer2 = params{i,2};
+        % op.ply0_E_t_multiplier = params(i);
+        op.ply0_rho_multiplier = params(i);
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         %Set default options and validate
-        op = fn_set_options(op);
+        op = fn_set_options(op, op_output);
         fprintf("--------------------------------------------------------------------------------------\n")
         %Get results
-        [res{1,i}, steps{1,i}] = run_sim(op, op_alt, fe_options, anim_options, exp_data);
+        [res{1,i}, steps{1,i}] = run_sim(op, op_output, op_alt, fe_options, anim_options, exp_data);
     end
     
     %Plot results
@@ -111,21 +115,23 @@ end
 
 
 
-function [res, steps] = run_sim(op, op_alt, fe_options, anim_options, exp_data)
+function [res, steps] = run_sim(op, op_output, op_alt, fe_options, anim_options, exp_data)
 %% REDEFINE OPTIONS
 
 centre_freq = op_alt.centre_freq;
 no_cycles = op_alt.no_cycles;
 max_time = op_alt.max_time;
 
-geometry = op_alt.geometry;
-justgeometry = op_alt.justgeometry;
-run_fea = op_alt.run_fea;
-plot_sim_data = op_alt.plot_sim_data;
-plot_exp_data = op_alt.plot_exp_data;
-animate = op_alt.animate;
-if animate && fe_options.field_output_every_n_frames == inf
-    error('fe_options.field_output_every_n_frames == inf, so animation will NOT be shown')
+geometry = op_output.geometry;
+justgeometry = op_output.justgeometry;
+run_fea = op_output.run_fea;
+plot_sim_data = op_output.plot_sim_data;
+plot_exp_data = op_output.plot_exp_data;
+animate = op_output.animate;
+if animate && fe_options.field_output_every_n_frames == inf || anim_options.repeat_n_times == 0
+    error('fe_options.field_output_every_n_frames == inf, or, anim_options.repeat_n_times == 0, so animation will NOT be shown')
+elseif ~animate
+    fe_options.field_output_every_n_frames = inf;
 end
 
 
@@ -138,21 +144,21 @@ rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[
 E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 0.436;
 ply_orientation = 90; %rotation of ply (0 or 90 along z-axis)
 mat.ply90.rho = 1570 * op.ply90_rho_multiplier;
-mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply90_shear_wave_velocity_by_E_t, G_t, v_t);
+mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply90_E_t_multiplier, G_t, v_t);
 mat.ply90.rayleigh_coefs = rayleigh_coefs;
 mat.ply90.col = hsv2rgb([3/4,0.3,0.80]); %purple
 mat.ply90.el_typ = 'CPE3';
 %ply0
 ply_orientation = 0;
 mat.ply0.rho = 1570 * op.ply0_rho_multiplier;
-mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply0_shear_wave_velocity_by_E_t, G_t, v_t);
+mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply0_E_t_multiplier, G_t, v_t);
 mat.ply0.rayleigh_coefs = rayleigh_coefs;
 mat.ply0.col = hsv2rgb([1/4,0,0.80]);
 mat.ply0.el_typ = 'CPE3';
 %Resin
 mat.resin.rho = 1301 * op.interply_rho_multiplier;
 mat.resin.D = op.interply_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4.67e+9, 0.37); 
-mat.resin.col = hsv2rgb([.50,.75,.60]);
+mat.resin.col = hsv2rgb([0,.75,.60]);
 mat.resin.el_typ = 'CPE3';
 
 %% DEFINE BOUNDARY MATERIALS
@@ -168,10 +174,10 @@ mat.resin.el_typ = 'CPE3';
 % mat.ply90b.D = mat.ply90.D * op.interply_D_multiplier;
 % mat.ply90b.col = hsv2rgb([.40,.30,.60]);
 %Plys not in between plys
-mat.resinb = mat.resin;
-mat.resinb.col = hsv2rgb([0,.75,.60]);
-mat.resinb.rho = mat.resin.rho * op.intraply_rho_multiplier;
-mat.resinb.D = mat.resin.D * op.intraply_D_multiplier;
+mat.resin_intra = mat.resin;
+mat.resin_intra.col = hsv2rgb([0.50,.75,.60]);
+mat.resin_intra.rho = mat.resin.rho * op.intraply_rho_multiplier;
+mat.resin_intra.D = mat.resin.D * op.intraply_D_multiplier;
 %Water
 % For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
 % calcualted here from ultrasonic velocity (1500) and density (1000)
@@ -337,6 +343,7 @@ steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycle
 %these have to be same as forcing points)
 if op.separate_receiver
     receiver_end_pts = src_end_pts - mod.el_height*[0 1; 0 1];
+    % receiver_end_pts = src_end_pts - 3.5e-3*[0 1; 0 1];
     steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, receiver_end_pts(1, :), receiver_end_pts(2, :), el_size / 2);
 else
     steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
