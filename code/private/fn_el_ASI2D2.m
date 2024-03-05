@@ -37,7 +37,7 @@ end
 if isempty(nds) || isempty(els) || isempty(D) || isempty(rho)
 	el_K = [];
 	el_M = [];
-el_C = [];
+    el_C = [];
 	el_Q = [];
 	[loc_nd, loc_df] = fn_remove_dofs_from_el_matrices(loc_nd, loc_df, dofs_to_use);
 	return
