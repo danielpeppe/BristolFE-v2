@@ -18,7 +18,19 @@ for i = 1:length(params)
     scale_dsp = max(abs(aperture_dsp_data))/max(abs(res_sum_dsps)); %Scale exp response to match sim response
     translate_time = 1.194e-05; %Start of exp response
     %Plot final results
-    plot(steps{1,i}{1}.load.time + translate_time, res_sum_dsps*scale_dsp,'DisplayName',string(params(i)));
+    if iscell(params)
+        params_i = params{i};
+        n = length(params_i);
+        if n == 2
+            for ii = 1:(n - 1)
+                params_i = strcat(string(params_i(1)),string(params_i(2)));
+            end
+        end
+        str = params_i;
+    else
+        str = string(params(i));
+    end
+    plot(steps{1,i}{1}.load.time + translate_time, res_sum_dsps*scale_dsp,'DisplayName',str);
     hold on
 end
 
@@ -30,10 +42,10 @@ hold off
 
 xlabel('Time (s)')
 ylabel('Magnitude (-)')
-xlim([0 + translate_time,4e-6 + translate_time])
+xlim([1.15e-05,1.55e-05])
 ylim([min(aperture_dsp_data),max(aperture_dsp_data)])
 xcorr = 2; ycorr = 2;
-w = 30; h = 20;
+w = 30; h = 15;
 osx = 1.8; osy = 1.8;
 set(gcf,'Units','centimeters','Position',[xcorr ycorr w+1.75*osx h+1.75*osy])
 set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k','k',})
