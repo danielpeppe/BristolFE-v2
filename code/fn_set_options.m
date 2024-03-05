@@ -1,4 +1,4 @@
-function op = fn_set_options(op)
+function op = fn_set_options(op, op_output)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -33,8 +33,8 @@ default_op.ply90_rho_multiplier = 1;
 %   stiffness
 default_op.ply90_D_multiplier = 1;
 default_op.ply0_D_multiplier = 1;
-default_op.ply90_shear_wave_velocity_by_E_t = 1; %1 is default
-default_op.ply0_shear_wave_velocity_by_E_t = 1; %1 is default
+default_op.ply90_E_t_multiplier = 1; %1 is default
+default_op.ply0_E_t_multiplier = 1; %1 is default
 %   damping
 default_op.rayleigh_quality_factor = inf; %inf disables damping
 %Interply boundary options
@@ -46,13 +46,14 @@ default_op.interply_boundary = 1; %1 is default
 default_op.interply_midway_boundary = 1;
 default_op.interply_every_layer = 1;
 %   v2
-default_op.interply_first_layer = 1;
-default_op.interply_last_layer = 1;
+default_op.interply_first_layer = 0;
+default_op.interply_last_layer = 0;
 default_op.interply_rho_multiplier = 1;
 default_op.interply_D_multiplier = 1;
 %   v2 - Intraply boundary options
-default_op.intraply_layer1 = 'resinb';
-default_op.intraply_layer2 = 'resinb';
+default_op.intraply_boundary = 0;
+default_op.intraply_layer1 = 'resin_intra';
+default_op.intraply_layer2 = 'resin_intra';
 default_op.intraply_rho_multiplier = 1;
 default_op.intraply_D_multiplier = 1;
 %Water boundary
@@ -109,6 +110,18 @@ end
 %Solid water options
 if op.solidwater && ~op.upper_water_present
     error('Option Error: set op.upper_water_present == 1 when using solidwater')
+end
+
+%% PRINT OUTPUT OPTIONS
+
+if op_output.justgeometry
+    fprintf("Output option enabled: JUSTGEOMETRY\n")
+end
+if op_output.geometry
+    fprintf("Output option enabled: GEOMETRY\n")
+end
+if op_output.animate
+    fprintf("Output option enabled: ANIMATE\n")
 end
 end
 
