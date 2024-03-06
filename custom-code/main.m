@@ -21,14 +21,14 @@ op_output.geometry = 1;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 0;
 op_output.plot_exp_data = 0;
-op_output.animate = 1;
-
+op_output.animate = 0;
 
 %% TUNING
 
+%Model
+op.model_size_w_multiplier = 1.5;
 %Transducer options
-op.aperture_n_els = 16; %number of elements
-op.no_cycles = 4;
+op.aperture_n_els = 4; %number of elements
 op.src_matl = 'solid';
 %Water options
 op.water_rho_multiplier = 1;
@@ -52,10 +52,11 @@ op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping) (
 %Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
-op.interply_boundary = 0;
+op.interply_boundary = 1;
 op.interply_rho_multiplier = 1;
 op.interply_D_multiplier = 1;
 %Intraply bounday options
+op.intraply_boundary = 0;
 op.intraply_layer2 = 'resin_intra';
 op.intraply_rho_multiplier = 1;
 op.intraply_D_multiplier = 1;
@@ -63,62 +64,55 @@ op.intraply_D_multiplier = 1;
 %% RUNNING SIM
 
 %Define input parameters
-params = [];
-% params = [1 0];
-% params = [10 20 30]; %els_per_wavelength
-% params = [inf 1]; %damping
-% params = {'resin','resin';'ply90','ply0'}; %intraply layers
-% params = [1 0.95 0.9 0.85 0.8]; %stiffness (D)
-% params = {[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]};
-% params = [0.9 0.95 1 1.05 1.1];
-% params = [1 2]; %plys per type
-% params = [8 16 32];
+op.params = [];
+% op.params = [1 0];
+op.params = [10 20 30]; %els_per_wavelength
+% op.params = [inf 1]; %damping
+% op.params = {'resin','resin';'ply90','ply0'}; %intraply layers
+% op.params = [1 0.95 0.9 0.85 0.8]; %stiffness (D)
+% op.params = {[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]};
+% op.params = [0.9 0.95 1 1.05 1.1];
+% op.params = [1 2]; %plys per type
+% op.params = [8 16 32];
 
 %Iterate sim for number of parameters
-if isempty(params)
-    %Set default output
-    op_output.plot_sim_data = 1;
-    op_output.plot_exp_data = 1;
-
+if isempty(op.params)
     fprintf("--------------------------- RUNNNING ONE SIM -----------------------------------\n")
-    %Set default options and validate
     op = fn_set_options(op, op_output);
     fprintf("--------------------------------------------------------------------------------\n")
+    
     %Get results
     [res{1}, steps{1}] = run_sim(op, op_output, fe_options, anim_options, exp_data);
 else
     fprintf("--------------------------- RUNNNING MULTIPLE SIMS -----------------------------------\n")
-    %Set default output
-    op_output.animate = 0;
-
-    n = length(params);
+    n = length(op.params);
     res = cell(1, n);
     steps = {1, n};
     for i = 1:n
         fprintf("----------------------------------- No %d/%d ------------------------------------------\n", i, n)
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
-        % op.els_per_wavelength = params(i);
-        % op.rayleigh_quality_factor = params(i); %inf disables damping (0.5 is light damping)
-        % op.interply_first_layer = params(i);
-        % op.interply_boundary = params(i);
-        % op.intraply_layer1 = params{i,1}; op.intraply_layer2 = params{i,2};
-        % op.ply0_E_t_multiplier = params(i);
-        % op.ply0_rho_multiplier = params(i);
-        % op.ply90_G_x_multiplier = params(i);
-        % op.ply0_G_x_multiplier = params(i);
-        % op.n_plys_per_type = params(i);
-        % op.aperture_n_els = params(i);
-        op.ply_symmetry = params(i);
+        op.els_per_wavelength = op.params(i);
+        % op.rayleigh_quality_factor = op.params(i); %inf disables damping (0.5 is light damping)
+        % op.interply_first_layer = op.params(i);
+        % op.interply_boundary = op.params(i);
+        % op.intraply_layer1 = op.params{i,1}; op.intraply_layer2 = op.params{i,2};
+        % op.ply0_E_t_multiplier = op.params(i);
+        % op.ply0_rho_multiplier = op.params(i);
+        % op.ply90_G_x_multiplier = op.params(i);
+        % op.ply0_G_x_multiplier = op.params(i);
+        % op.n_plys_per_type = op.params(i);
+        % op.aperture_n_els = op.params(i);
+        % op.ply_symmetry = op.params(i);
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
-        %Set default options and validate
         op = fn_set_options(op, op_output);
         fprintf("--------------------------------------------------------------------------------------\n")
+        
         %Get results
         [res{1,i}, steps{1,i}] = run_sim(op, op_output, fe_options, anim_options, exp_data);
     end
-    
+
     %Plot results
-    fn_plot_signal(op, res, steps, exp_data, params)
+    fn_plot_signal(op, res, steps, exp_data, op.params)
 end
 
 
@@ -217,9 +211,14 @@ matls = fn_get_matls_struct(op, mat);
 %Define aperture size relative to exp probe
 probe_width = op.scale_units * (exp_data.array.el_xc(end) - exp_data.array.el_xc(1));
 aperture_width = double(probe_width * op.aperture_n_els/exp_data.num_els);
+aperture_width_8 = double(probe_width * 8/exp_data.num_els);
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc * op.specimen_size;
-model_size_w = aperture_width * op.model_size_w_multiplier;
+if aperture_width > aperture_width_8
+    model_size_w = (op.specimen_size + (aperture_width - aperture_width_8)) * op.model_size_w_multiplier;
+else
+    model_size_w = op.specimen_size * op.model_size_w_multiplier;
+end
 model_size_h = op.specimen_size + water_brdy_thickness * (op.upper_water_present + op.lower_water_present);
 abs_bdry_thickness = op.abs_bdry_thickness_perc * op.specimen_size;
 
