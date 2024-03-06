@@ -10,7 +10,10 @@ default_op.els_per_wavelength = 30; %10 is default (increases are non-linear)
 default_op.time_step_safety_factor = 3; %3 is default
 %Signal options
 default_op.centre_freq = 5e6;
-default_op.horizontal_src = 0;
+default_op.no_cycles = 4;
+default_op.max_time = 3.5e-6;
+default_op.src_matl = 'solid';
+default_op.src_dir = 2;
 default_op.aperture_n_els = 8; %number of elements
 default_op.separate_transmitter = 0; %by 1 element
 default_op.separate_receiver = 0;
@@ -33,15 +36,17 @@ default_op.ply90_rho_multiplier = 1;
 %   stiffness
 default_op.ply90_D_multiplier = 1;
 default_op.ply0_D_multiplier = 1;
-default_op.ply90_E_t_multiplier = 1; %1 is default
-default_op.ply0_E_t_multiplier = 1; %1 is default
+default_op.ply90_E_t_multiplier = 1;
+default_op.ply0_E_t_multiplier = 1;
+default_op.ply90_G_x_multiplier = 1;
+default_op.ply0_G_x_multiplier = 1;
 %   damping
 default_op.rayleigh_quality_factor = inf; %inf disables damping
 %Interply boundary options
 %   v1 and v2
 default_op.interply_layer1 = 'resin';
 default_op.interply_layer2 = 'resin';
-default_op.interply_boundary = 1; %1 is default
+default_op.interply_boundary = 1;
 %   v1
 default_op.interply_midway_boundary = 1;
 default_op.interply_every_layer = 1;
@@ -52,6 +57,7 @@ default_op.interply_rho_multiplier = 1;
 default_op.interply_D_multiplier = 1;
 %   v2 - Intraply boundary options
 default_op.intraply_boundary = 0;
+default_op.intraply_middle_layer = 0;
 default_op.intraply_layer1 = 'resin_intra';
 default_op.intraply_layer2 = 'resin_intra';
 default_op.intraply_rho_multiplier = 1;
@@ -110,6 +116,16 @@ end
 %Solid water options
 if op.solidwater && ~op.upper_water_present
     error('Option Error: set op.upper_water_present == 1 when using solidwater')
+end
+%Source options
+if strcmpi(op.src_matl,'water')
+    op.src_dir = 4;
+elseif strcmpi(op.src_matl,'solid')
+    op.src_dir = 2;
+elseif strcmpi(op.src_matl,'solid_horizontal')
+    op.src_dir = 1;
+else
+    error('Option error: set op.src_matl to water, solid, or solid_horizontal')
 end
 
 %% PRINT OUTPUT OPTIONS
