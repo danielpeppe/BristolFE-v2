@@ -21,6 +21,7 @@ interply_boundary = op.interply_boundary;
 interply_first_layer = op.interply_first_layer;
 interply_last_layer = op.interply_last_layer;
 intraply_boundary = op.intraply_boundary;
+intraply_middle_layer = op.intraply_middle_layer;
 %Define material indices of composite layers
 layer1_i = fn_matl_i(matls, op.layer1);
 layer2_i = fn_matl_i(matls, op.layer2);
@@ -110,19 +111,22 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         %Set interply boundaries if enabled
         if interply_boundary
             if layer_in_type < n_plys_per_type || (ply_symmetry && (target_layer == n_ply_layers/2))
-                if intraply_boundary
-                    %Set boundary as intraply material
+                if intraply_middle_layer && (ply_symmetry && (target_layer == n_ply_layers/2))
+                    %Set boundary as intRAply material
+                    mod = set_target_layer_material(mod, geom, intraply_matl_i, el_height, height_completed);
+                elseif intraply_boundary
+                    %Set boundary as intRAply material
                     mod = set_target_layer_material(mod, geom, intraply_matl_i, el_height, height_completed);
                 else
-                    %Set boundary as intraply material
+                    %Set boundary as interply material
                     mod = set_target_layer_material(mod, geom, interply_matl_i, el_height, height_completed);
                 end
-                %Update height again
+                %Update height
                 height_completed = height_completed + el_height;
             elseif layer_in_type == n_plys_per_type && ~(interply_last_layer == 0 && target_layer == n_ply_layers) %weird logic but it works!
                 %Set interlayer boundary
                 mod = set_target_layer_material(mod, geom, interply_matl_i, el_height, height_completed);
-                %Update height again
+                %Update height
                 height_completed = height_completed + el_height;
             end
         end
