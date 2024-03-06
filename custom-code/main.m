@@ -7,14 +7,29 @@ addpath('../code');
 
 load('g4-s8_x-8000_z0_025.mat','exp_data');
 
+%% DEFINE OUTPUT
+
+%Resolution options
+op.els_per_wavelength = 30; %increases are non-linear
+op.time_step_safety_factor = 3; %12 if upper_water_present
+anim_options.repeat_n_times = 10;
+fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
+op.max_time = 3.5e-6;
+%Output for each sim
+op_output.justgeometry = 0; %disables other outputs
+op_output.geometry = 1;
+op_output.run_fea = 1;
+op_output.plot_sim_data = 0;
+op_output.plot_exp_data = 0;
+op_output.animate = 1;
+
+
 %% TUNING
 
-%%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
-%Resolution
-op.els_per_wavelength = 30; %10 is default (increases are non-linear)
-op.time_step_safety_factor = 3; %3 is default (12 if upper_water_present)
-%Model options
-op.aperture_n_els = 8; %number of elements
+%Transducer options
+op.aperture_n_els = 16; %number of elements
+op.no_cycles = 4;
+op.src_matl = 'solid';
 %Water options
 op.water_rho_multiplier = 1;
 op.water_D_multiplier = 1;
@@ -24,45 +39,28 @@ op.layer2 = 'ply0';
 op.n_ply_layers = 32;
 op.n_plys_per_type = 2;
 op.ply_symmetry = 1;
-%   density
+%   Density
 op.ply90_rho_multiplier = 1;
 op.ply0_rho_multiplier = 1;
-%   stiffness
+%   Stiffness
 op.ply90_D_multiplier = 1;
 op.ply0_D_multiplier = 1;
-op.ply90_E_t_multiplier = 1; %1 is default
-op.ply0_E_t_multiplier = 1; %1 is default
+op.ply90_E_t_multiplier = 1;
+op.ply0_E_t_multiplier = 1;
 %Damping options
 op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping) (smaller = larger damping)
 %Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
-op.interply_boundary = 1; %1 is default
-op.interply_first_layer = 0; %v2
-op.interply_last_layer = 0; %v2
+op.interply_boundary = 0;
 op.interply_rho_multiplier = 1;
 op.interply_D_multiplier = 1;
-%%%%%%%%%%%%% Tuning %%%%%%%%%%%%%
+%Intraply bounday options
+op.intraply_layer2 = 'resin_intra';
+op.intraply_rho_multiplier = 1;
+op.intraply_D_multiplier = 1;
 
-%% OTHER OPTIONS
-
-%Signal
-op_alt.centre_freq = exp_data.array.centre_freq; %5e6 is default
-op_alt.no_cycles = 4; %4 is default
-op_alt.max_time = 3.5e-6; %3.5e-6 is default (configures signal which in turn sets FEA time)
-%Output for each sim
-op_output.justgeometry = 0; %disables other outputs
-op_output.geometry = 0;
-op_output.run_fea = 1;
-op_output.plot_sim_data = 0;
-op_output.plot_exp_data = 0;
-op_output.animate = 1;
-%Animation options
-anim_options.repeat_n_times = 10;
-fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
-fe_options.use_gpu_if_present = 0;
-
-%% RUN SIM
+%% RUNNING SIM
 
 %Define input parameters
 params = [];
@@ -73,9 +71,12 @@ params = [];
 % params = [1 0.95 0.9 0.85 0.8]; %stiffness (D)
 % params = {[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]};
 % params = [0.9 0.95 1 1.05 1.1];
+% params = [1 2]; %plys per type
+% params = [8 16 32];
 
 %Iterate sim for number of parameters
 if isempty(params)
+    %Set default output
     op_output.plot_sim_data = 1;
     op_output.plot_exp_data = 1;
 
@@ -84,13 +85,17 @@ if isempty(params)
     op = fn_set_options(op, op_output);
     fprintf("--------------------------------------------------------------------------------\n")
     %Get results
-    [res{1}, steps{1}] = run_sim(op, op_output, op_alt, fe_options, anim_options, exp_data);
+    [res{1}, steps{1}] = run_sim(op, op_output, fe_options, anim_options, exp_data);
 else
+    fprintf("--------------------------- RUNNNING MULTIPLE SIMS -----------------------------------\n")
+    %Set default output
+    op_output.animate = 0;
+
     n = length(params);
-    res = cell(1,n);
-    steps = {1,n};
+    res = cell(1, n);
+    steps = {1, n};
     for i = 1:n
-        fprintf("--------------------------- RUNNNING MULTIPLE SIMS -----------------------------------\n")
+        fprintf("----------------------------------- No %d/%d ------------------------------------------\n", i, n)
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
         % op.els_per_wavelength = params(i);
         % op.rayleigh_quality_factor = params(i); %inf disables damping (0.5 is light damping)
@@ -98,13 +103,18 @@ else
         % op.interply_boundary = params(i);
         % op.intraply_layer1 = params{i,1}; op.intraply_layer2 = params{i,2};
         % op.ply0_E_t_multiplier = params(i);
-        op.ply0_rho_multiplier = params(i);
+        % op.ply0_rho_multiplier = params(i);
+        % op.ply90_G_x_multiplier = params(i);
+        % op.ply0_G_x_multiplier = params(i);
+        % op.n_plys_per_type = params(i);
+        % op.aperture_n_els = params(i);
+        op.ply_symmetry = params(i);
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         %Set default options and validate
         op = fn_set_options(op, op_output);
         fprintf("--------------------------------------------------------------------------------------\n")
         %Get results
-        [res{1,i}, steps{1,i}] = run_sim(op, op_output, op_alt, fe_options, anim_options, exp_data);
+        [res{1,i}, steps{1,i}] = run_sim(op, op_output, fe_options, anim_options, exp_data);
     end
     
     %Plot results
@@ -113,15 +123,14 @@ end
 
 
 
-
-
-function [res, steps] = run_sim(op, op_output, op_alt, fe_options, anim_options, exp_data)
+function [res, steps] = run_sim(op, op_output, fe_options, anim_options, exp_data)
 %% REDEFINE OPTIONS
 
-centre_freq = op_alt.centre_freq;
-no_cycles = op_alt.no_cycles;
-max_time = op_alt.max_time;
-
+%Paul Options
+centre_freq = op.centre_freq;
+no_cycles = op.no_cycles;
+max_time = op.max_time;
+%Options
 geometry = op_output.geometry;
 justgeometry = op_output.justgeometry;
 run_fea = op_output.run_fea;
@@ -144,14 +153,14 @@ rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[
 E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 0.436;
 ply_orientation = 90; %rotation of ply (0 or 90 along z-axis)
 mat.ply90.rho = 1570 * op.ply90_rho_multiplier;
-mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply90_E_t_multiplier, G_t, v_t);
+mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib * op.ply90_G_x_multiplier, v_fib, E_t * op.ply90_E_t_multiplier, G_t, v_t);
 mat.ply90.rayleigh_coefs = rayleigh_coefs;
 mat.ply90.col = hsv2rgb([3/4,0.3,0.80]); %purple
 mat.ply90.el_typ = 'CPE3';
 %ply0
 ply_orientation = 0;
 mat.ply0.rho = 1570 * op.ply0_rho_multiplier;
-mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib, v_fib, E_t * op.ply0_E_t_multiplier, G_t, v_t);
+mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(ply_orientation, E_fib, G_fib * op.ply90_G_x_multiplier, v_fib, E_t * op.ply0_E_t_multiplier, G_t, v_t);
 mat.ply0.rayleigh_coefs = rayleigh_coefs;
 mat.ply0.col = hsv2rgb([1/4,0,0.80]);
 mat.ply0.el_typ = 'CPE3';
@@ -194,11 +203,11 @@ mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
 %     mat.solidwater.col = hsv2rgb([0.6,0.75,0.8]);
 %     mat.solidwater.el_typ = 'CPE3'; %AC2D3 must be the element type for a fluid
 % end
-%Steel (FOR DEBUGGING)
-% mat.steel.rho = 8900; %8900
-% mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
-% mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
-% mat.steel.el_typ = 'CPE3'; %CPE3 must be the element type for a solid
+%Steel
+mat.steel.rho = 8900; %8900
+mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
+mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
+mat.steel.el_typ = 'CPE3';
 
 %Get matls struct from mat struct
 matls = fn_get_matls_struct(op, mat);
@@ -210,7 +219,7 @@ probe_width = op.scale_units * (exp_data.array.el_xc(end) - exp_data.array.el_xc
 aperture_width = double(probe_width * op.aperture_n_els/exp_data.num_els);
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc * op.specimen_size;
-model_size_w = aperture_width*op.model_size_w_multiplier;
+model_size_w = aperture_width * op.model_size_w_multiplier;
 model_size_h = op.specimen_size + water_brdy_thickness * (op.upper_water_present + op.lower_water_present);
 abs_bdry_thickness = op.abs_bdry_thickness_perc * op.specimen_size;
 
@@ -262,8 +271,7 @@ end
 %Set specimen materials
 if op.solid_specimen
     mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls,'steel'));
-end
-if op.composite_specimen
+elseif op.composite_specimen
     if op.upper_water_present
         [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
     else
@@ -286,12 +294,6 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
 %Define a line along which sources will be placed to excite waves
 if op.upper_water_present
-    if op.solidwater
-        src_dir = 2;
-    else
-        %Redefine src_dir for fluid
-        src_dir = 4;
-    end
     %Redefine top of specimen
     top_of_specimen = new_top_of_specimen;
     %Adjust src offset if upper water is present
@@ -303,18 +305,15 @@ if op.upper_water_present
         src_offset = 0;
     end
 else
-    src_dir = 2;
     src_offset = 0;
 end
 
 %Define src end points
-if ~op.horizontal_src
+if ~strcmpi(op.src_matl,'horizontal')
     src_end_pts = [
         model_size_w/2 - aperture_width/2, top_of_specimen + src_offset
         model_size_w/2 + aperture_width/2, top_of_specimen + src_offset];
 else
-    %Redefine src_dir for fluid
-    src_dir = 1;
     src_end_pts = [
         0, 0.25*model_size_h
         0, 0.75*model_size_h];
@@ -330,7 +329,7 @@ if op.separate_transmitter
 else
     steps{1}.load.frc_nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
 end
-steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * src_dir;
+steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * op.src_dir;
 
 %Also provide the time signal for the loading (if this is a vector, it will
 %be applied at all frc_nds/frc_dfs simultaneously; alternatively it can be a matrix
@@ -348,7 +347,7 @@ if op.separate_receiver
 else
     steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
 end
-steps{1}.mon.dfs = ones(size(steps{1}.mon.nds)) * src_dir;
+steps{1}.mon.dfs = ones(size(steps{1}.mon.nds)) * op.src_dir;
 
 %% DISPLAY MODEL
 
