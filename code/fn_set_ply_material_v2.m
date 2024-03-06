@@ -90,9 +90,14 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
 
     %Loop over layers in stack
     for layer_in_type = 1:n_plys_per_type
-        target_layer = (ply_type - 1)*n_plys_per_type + layer_in_type;
         %Stay close to true ply layer height using upper and lower heights
-        true_height = (target_layer - 1)*ply_height + (target_layer - 1 + interply_first_layer)*el_height;
+        target_layer = (ply_type - 1)*n_plys_per_type + layer_in_type;
+        is_middle_layer = (ply_symmetry && (target_layer == n_ply_layers/2)); %Define middle layer condition
+        if interply_boundary
+            true_height = (target_layer - 1)*ply_height + (target_layer - 1 + interply_first_layer)*el_height;
+        else
+            true_height = (target_layer - 1)*ply_height;
+        end
         if height_completed > true_height
             ply_target_height = ply_height_lower;
         else
@@ -110,25 +115,20 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         
         %Set interply boundaries if enabled
         if interply_boundary
-            if layer_in_type < n_plys_per_type || (ply_symmetry && (target_layer == n_ply_layers/2))
-                if intraply_middle_layer && (ply_symmetry && (target_layer == n_ply_layers/2))
-                    %Set boundary as intRAply material
+            if intraply_boundary
+                if layer_in_type < n_plys_per_type || is_middle_layer && ply_symmetry
+                    %Set intRAply material
                     mod = set_target_layer_material(mod, geom, intraply_matl_i, el_height, height_completed);
-                elseif intraply_boundary
-                    %Set boundary as intRAply material
-                    mod = set_target_layer_material(mod, geom, intraply_matl_i, el_height, height_completed);
-                else
-                    %Set boundary as interply material
+                else %layer_in_type == n_plys_per_type && ~(interply_last_layer == 0 && target_layer == n_ply_layers) %weird logic but it works!
+                    %Set interply material
                     mod = set_target_layer_material(mod, geom, interply_matl_i, el_height, height_completed);
                 end
-                %Update height
-                height_completed = height_completed + el_height;
-            elseif layer_in_type == n_plys_per_type && ~(interply_last_layer == 0 && target_layer == n_ply_layers) %weird logic but it works!
-                %Set interlayer boundary
+            else
+                %Set boundary as interply material
                 mod = set_target_layer_material(mod, geom, interply_matl_i, el_height, height_completed);
-                %Update height
-                height_completed = height_completed + el_height;
             end
+            %Update height
+            height_completed = height_completed + el_height;
         end
     end
 
