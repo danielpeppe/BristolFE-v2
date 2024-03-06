@@ -42,8 +42,8 @@ hold off
 
 xlabel('Time (s)')
 ylabel('Magnitude (-)')
-xlim([1.15e-05,1.55e-05])
-ylim([min(aperture_dsp_data),max(aperture_dsp_data)])
+xlim([1.2e-05,1.5e-05])
+ylim([-10,10])
 xcorr = 2; ycorr = 2;
 w = 30; h = 15;
 osx = 1.8; osy = 1.8;
