@@ -3,8 +3,8 @@ function op = fn_set_options(op, op_output)
 %   Detailed explanation goes here
 
 %Model
-default_op.abs_bdry_thickness_perc = 0.2; %0.2 is default (relative to specimen_size)
-default_op.model_size_w_multiplier = 2.52; %relative to aperture size
+default_op.abs_bdry_thickness_perc = 0.2;
+default_op.model_size_w_multiplier = 1.5;
 %Resolution
 default_op.els_per_wavelength = 30; %10 is default (increases are non-linear)
 default_op.time_step_safety_factor = 3; %3 is default
@@ -19,7 +19,7 @@ default_op.separate_transmitter = 0; %by 1 element
 default_op.separate_receiver = 0;
 %Specimen
 default_op.specimen_size = 4e-3; %[m]
-default_op.scale_units = 1;
+default_op.scale_units = 1; %1000 = using mm
 default_op.solid_specimen = 0;
 default_op.composite_specimen = 1;
 %Composite structure
@@ -57,7 +57,6 @@ default_op.interply_rho_multiplier = 1;
 default_op.interply_D_multiplier = 1;
 %   v2 - Intraply boundary options
 default_op.intraply_boundary = 0;
-default_op.intraply_middle_layer = 0;
 default_op.intraply_layer1 = 'resin_intra';
 default_op.intraply_layer2 = 'resin_intra';
 default_op.intraply_rho_multiplier = 1;
@@ -75,11 +74,14 @@ default_op.solidwater_D_multiplier = 1;
 %Location of transducer in water
 default_op.water_interface_perc = 0; %0-1 (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
 default_op.water_interface_single = 0; %0 or 1 (1 separates transducer from specimen by 1 element)
+%Parameters for multiple simulations
+default_op.params = [];
 
-%% Set default options
+%% SET DEFAULT OPTIONS
+
 op = fn_set_default_fields(op, default_op, true); %true to print non-default options
 
-%% Validate input
+%% VALIDATE INPUT
 
 %Resolution options
 if op.els_per_wavelength < 30
@@ -128,8 +130,15 @@ else
     error('Option error: set op.src_matl to water, solid, or solid_horizontal')
 end
 
-%% PRINT OUTPUT OPTIONS
+%% VALIDATE OUTPUT
 
+if ~isempty(op.params)
+    op_output.plot_sim_data = 1;
+    op_output.plot_exp_data = 1;
+else
+    op_output.justgeometry = 0;
+    op_output.animate = 0;
+end
 if op_output.justgeometry
     fprintf("Output option enabled: JUSTGEOMETRY\n")
 end
@@ -139,5 +148,6 @@ end
 if op_output.animate
     fprintf("Output option enabled: ANIMATE\n")
 end
+
 end
 

@@ -41,12 +41,14 @@ if using_for_op
             %Print non-default field values
             default_value = default_struct.(new_struct_fieldnames{ii});
             new_struct_value = new_struct.(new_struct_fieldnames{ii});
+            % for parameters for multiple sims
+            if strcmpi(new_struct_fieldnames{ii},'params')
+                %do nothing
             % for numeric values
-            if isnumeric(new_struct_value)
+            elseif isnumeric(new_struct_value)
                 if default_value ~= new_struct_value
                     fprintf('op.%s: %.4f (default: %.4f)\n', new_struct_fieldnames{ii}, new_struct_value, default_value);
                 end
-            
             elseif ischar(new_struct_value) || isstring(new_struct_value)
                 if ~strcmpi(default_value, new_struct_value)
                     fprintf('op.%s: %s (default: %s)\n', new_struct_fieldnames{ii}, new_struct_value, default_value);
