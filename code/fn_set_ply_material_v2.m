@@ -21,7 +21,6 @@ interply_boundary = op.interply_boundary;
 interply_first_layer = op.interply_first_layer;
 interply_last_layer = op.interply_last_layer;
 intraply_boundary = op.intraply_boundary;
-intraply_middle_layer = op.intraply_middle_layer;
 %Define material indices of composite layers
 layer1_i = fn_matl_i(matls, op.layer1);
 layer2_i = fn_matl_i(matls, op.layer2);
