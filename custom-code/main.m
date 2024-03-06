@@ -10,7 +10,7 @@ load('g4-s8_x-8000_z0_025.mat','exp_data');
 %% DEFINE OUTPUT
 
 %Resolution options
-op.els_per_wavelength = 30; %increases are non-linear
+op.els_per_wavelength = 20; %increases are non-linear
 op.time_step_safety_factor = 3; %12 if upper_water_present
 anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
@@ -19,16 +19,16 @@ op.max_time = 3.5e-6;
 op_output.justgeometry = 0; %disables other outputs
 op_output.geometry = 1;
 op_output.run_fea = 1;
-op_output.plot_sim_data = 0;
-op_output.plot_exp_data = 0;
-op_output.animate = 0;
+op_output.plot_sim_data = 1;
+op_output.plot_exp_data = 1;
+op_output.animate = 1;
 
 %% TUNING
 
 %Model
 op.model_size_w_multiplier = 1.5;
 %Transducer options
-op.aperture_n_els = 4; %number of elements
+op.aperture_n_els = 8; %number of elements
 op.src_matl = 'solid';
 %Water options
 op.water_rho_multiplier = 1;
@@ -52,7 +52,7 @@ op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping) (
 %Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
-op.interply_boundary = 1;
+op.interply_boundary = 0;
 op.interply_rho_multiplier = 1;
 op.interply_D_multiplier = 1;
 %Intraply bounday options
@@ -66,14 +66,14 @@ op.intraply_D_multiplier = 1;
 %Define input parameters
 op.params = [];
 % op.params = [1 0];
-op.params = [10 20 30]; %els_per_wavelength
+% op.params = [10 20 30]; %els_per_wavelength
 % op.params = [inf 1]; %damping
 % op.params = {'resin','resin';'ply90','ply0'}; %intraply layers
 % op.params = [1 0.95 0.9 0.85 0.8]; %stiffness (D)
 % op.params = {[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]};
 % op.params = [0.9 0.95 1 1.05 1.1];
 % op.params = [1 2]; %plys per type
-% op.params = [8 16 32];
+% op.params = [1 4 8 12 14 16 32];
 
 %Iterate sim for number of parameters
 if isempty(op.params)
@@ -91,7 +91,7 @@ else
     for i = 1:n
         fprintf("----------------------------------- No %d/%d ------------------------------------------\n", i, n)
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
-        op.els_per_wavelength = op.params(i);
+        % op.els_per_wavelength = op.params(i);
         % op.rayleigh_quality_factor = op.params(i); %inf disables damping (0.5 is light damping)
         % op.interply_first_layer = op.params(i);
         % op.interply_boundary = op.params(i);
@@ -101,7 +101,7 @@ else
         % op.ply90_G_x_multiplier = op.params(i);
         % op.ply0_G_x_multiplier = op.params(i);
         % op.n_plys_per_type = op.params(i);
-        % op.aperture_n_els = op.params(i);
+        op.aperture_n_els = op.params(i);
         % op.ply_symmetry = op.params(i);
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         op = fn_set_options(op, op_output);

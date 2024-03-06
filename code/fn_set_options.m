@@ -85,21 +85,15 @@ op = fn_set_default_fields(op, default_op, true); %true to print non-default opt
 
 %Resolution options
 if op.els_per_wavelength < 30
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-    disp('CAUTION: els_per_wavelength < 30')
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    warning('els_per_wavelength < 30')
 elseif op.time_step_safety_factor < 3
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-    disp('CAUTION: time_step_safety_factor < 3')
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    warning('time_step_safety_factor < 3')
 end
 %Input options
 if op.solid_specimen && op.composite_specimen
     error('Option Error: choose solid_specimen or composite_specimen')
 elseif (op.lower_water_present || op.upper_water_present) && (op.abs_bdry_thickness_perc >= op.water_bdry_thickness_perc)
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-    disp('CAUTION: absorbing boundary >= water boundary')
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    warning('absorbing boundary >= water boundary')
 end
 %Ply options
 if op.n_plys_per_type == 0

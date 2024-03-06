@@ -149,9 +149,7 @@ model_specimen_height = height_completed;
 model_accuracy = round(100*model_specimen_height/geom.specimen_height, 2);
 fprintf("Specimen model height accuracy: %.2f%%\n", model_accuracy)
 if abs(100 - model_accuracy) > 5
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-    disp('CAUTION: Specimen model accuracy is less than 95%')
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    warning('Specimen model accuracy is less than 95%')
 end
 %Caluculate percentage of model made up of interply boundaries if enabled
 if interply_boundary
