@@ -4,7 +4,7 @@ function op = fn_set_options(op, op_output)
 
 %Model
 default_op.abs_bdry_thickness_perc = 0.2;
-default_op.model_size_w_multiplier = 1.5;
+default_op.model_width_multiplier = 1.5;
 %Resolution
 default_op.els_per_wavelength = 30; %10 is default (increases are non-linear)
 default_op.time_step_safety_factor = 3; %3 is default
@@ -44,9 +44,10 @@ default_op.ply0_G_x_multiplier = 1;
 default_op.rayleigh_quality_factor = inf; %inf disables damping
 %Interply boundary options
 %   v1 and v2
+default_op.interply_boundary = 1;
 default_op.interply_layer1 = 'resin';
 default_op.interply_layer2 = 'resin';
-default_op.interply_boundary = 1;
+default_op.interply_el_thickness = 1;
 %   v1
 default_op.interply_midway_boundary = 1;
 default_op.interply_every_layer = 1;

@@ -10,23 +10,21 @@ load('g4-s8_x-8000_z0_025.mat','exp_data');
 %% DEFINE OUTPUT
 
 %Resolution options
-op.els_per_wavelength = 20; %increases are non-linear
+op.els_per_wavelength = 30; %increases are non-linear
 op.time_step_safety_factor = 3; %12 if upper_water_present
 anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
 op.max_time = 3.5e-6;
 %Output for each sim
 op_output.justgeometry = 0; %disables other outputs
-op_output.geometry = 1;
+op_output.geometry = 0;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 1;
 op_output.plot_exp_data = 1;
-op_output.animate = 1;
+op_output.animate = 0;
 
 %% TUNING
 
-%Model
-op.model_size_w_multiplier = 1.5;
 %Transducer options
 op.aperture_n_els = 8; %number of elements
 op.src_matl = 'solid';
@@ -52,7 +50,8 @@ op.rayleigh_quality_factor = inf; %inf disables damping (0.5 is light damping) (
 %Interply boundary options
 op.interply_layer1 = 'resin';
 op.interply_layer2 = 'resin';
-op.interply_boundary = 0;
+op.interply_boundary = 1;
+op.interply_el_thickness = 2;
 op.interply_rho_multiplier = 1;
 op.interply_D_multiplier = 1;
 %Intraply bounday options
@@ -215,26 +214,26 @@ aperture_width_8 = double(probe_width * 8/exp_data.num_els);
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc * op.specimen_size;
 if aperture_width > aperture_width_8
-    model_size_w = (op.specimen_size + (aperture_width - aperture_width_8)) * op.model_size_w_multiplier;
+    model_width = (op.specimen_size + (aperture_width - aperture_width_8)) * op.model_width_multiplier;
 else
-    model_size_w = op.specimen_size * op.model_size_w_multiplier;
+    model_width = op.specimen_size * op.model_width_multiplier;
 end
-model_size_h = op.specimen_size + water_brdy_thickness * (op.upper_water_present + op.lower_water_present);
+model_height = op.specimen_size + water_brdy_thickness * (op.upper_water_present + op.lower_water_present);
 abs_bdry_thickness = op.abs_bdry_thickness_perc * op.specimen_size;
 
 %Define size of model
 model_bdry_pts = [
     0,            0 
-    model_size_w, 0
-    model_size_w, model_size_h
-    0,            model_size_h];
+    model_width,  0
+    model_width,  model_height
+    0,            model_height];
 
 %Define specimen size that will be water (water surrounds specimen)
 wbt = water_brdy_thickness; %tmp for readability
 specimen_brdy_pts = [
     0,            wbt*op.lower_water_present
-    model_size_w, wbt*op.lower_water_present
-    model_size_w, wbt*op.lower_water_present + op.specimen_size
+    model_width,  wbt*op.lower_water_present
+    model_width,  wbt*op.lower_water_present + op.specimen_size
     0,            wbt*op.lower_water_present + op.specimen_size];
 
 %Define top of specimen for later use
@@ -244,9 +243,9 @@ top_of_specimen = specimen_brdy_pts(3,2);
 abt = abs_bdry_thickness; %tmp for readability
 abs_bdry_pts = [
     abt,                abt*op.lower_water_present
-    model_size_w - abt, abt*op.lower_water_present
-    model_size_w - abt, model_size_h - op.upper_water_present*abt
-    abt,                model_size_h - op.upper_water_present*abt];
+    model_width - abt,  abt*op.lower_water_present
+    model_width - abt,  model_height - op.upper_water_present*abt
+    abt,                model_height - op.upper_water_present*abt];
 
 %% DEFINE MESH
 
@@ -261,10 +260,10 @@ mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 mod.el_mat_i(:) = fn_matl_i(matls,'water');
 %Set upper elements to solid water if enabled
 if op.solidwater
-    solidwater_bdry = [0,            model_size_h/2
-                       model_size_w, model_size_h/2
-                       model_size_w, model_size_h
-                       0,            model_size_h];
+    solidwater_bdry = [0,            model_height/2
+                       model_width,  model_height/2
+                       model_width,  model_height
+                       0,            model_height];
     mod = fn_set_els_inside_bdry_to_mat(mod, solidwater_bdry, fn_matl_i(matls,'solidwater'));
 end
 %Set specimen materials
@@ -275,7 +274,7 @@ elseif op.composite_specimen
         [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
     else
         %v2 does not suppot op.upper_water_present
-        [mod, new_top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specimen_brdy_pts, model_size_h);
+        [mod, new_top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specimen_brdy_pts, model_height);
     end
 end
 
@@ -310,12 +309,12 @@ end
 %Define src end points
 if ~strcmpi(op.src_matl,'horizontal')
     src_end_pts = [
-        model_size_w/2 - aperture_width/2, top_of_specimen + src_offset
-        model_size_w/2 + aperture_width/2, top_of_specimen + src_offset];
+        model_width/2 - aperture_width/2, top_of_specimen + src_offset
+        model_width/2 + aperture_width/2, top_of_specimen + src_offset];
 else
     src_end_pts = [
-        0, 0.25*model_size_h
-        0, 0.75*model_size_h];
+        0, 0.25 * model_height
+        0, 0.75 * model_height];
 end
 
 %% DEFINE LOADS
