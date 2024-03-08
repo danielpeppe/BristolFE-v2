@@ -46,6 +46,9 @@ end
 %Calculate ply layer heights so ply material is applied to specific layers
 el_height = mod.el_height; %Calculated in fn_isometric_structured mesh
 interply_height = interply_el_thickness * el_height;
+if interply_height == 0
+    interply_boundary = 0;
+end
 if interply_boundary
     n_interply_layers = (n_ply_layers - 1) + interply_last_layer + interply_first_layer;
     ply_height = (geom.specimen_height - n_interply_layers*interply_height)/n_ply_layers;
