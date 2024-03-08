@@ -127,7 +127,7 @@ end
 
 %% VALIDATE OUTPUT
 
-if ~isempty(op.params)
+if isempty(op.params)
     op_output.plot_sim_data = 1;
     op_output.plot_exp_data = 1;
 else
