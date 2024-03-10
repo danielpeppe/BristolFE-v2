@@ -32,7 +32,7 @@ for i = 1:length(params)
     else
         str = string(params(i));
     end
-    plot(steps{1,i}{1}.load.time + translate_time, res_sum_dsps*scale_dsp,'DisplayName',str);
+    plot(steps{1,i}{1}.load.time + translate_time, res_sum_dsps*scale_dsp  * op.plot_scale_dsps,'DisplayName',str);
     hold on
 end
 
