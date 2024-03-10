@@ -1,6 +1,8 @@
-function fn_plot_signal(op, res, steps, exp_data, params)
+function fn_plot_signal(op, res, steps, exp_data)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+
+params = op.params;
 
 %Plot Final Results
 figure;
