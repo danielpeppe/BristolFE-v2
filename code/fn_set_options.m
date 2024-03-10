@@ -1,4 +1,4 @@
-function op = fn_set_options(op, op_output)
+function [op, op_output] = fn_set_options(op, op_output)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -23,6 +23,8 @@ default_op.scale_units = 1; %1000 = using mm
 default_op.solid_specimen = 0;
 default_op.composite_specimen = 1;
 %Composite structure
+default_op.ply0_orientation = 0;
+default_op.ply90_orientation = 90;
 default_op.n_ply_layers = 32;
 default_op.n_plys_per_type = 2;
 default_op.ply_symmetry = 1;
@@ -56,6 +58,11 @@ default_op.interply_first_layer = 0;
 default_op.interply_last_layer = 0;
 default_op.interply_rho_multiplier = 1;
 default_op.interply_D_multiplier = 1;
+
+default_op.ply0b_interply_rho_multiplier = 1;
+default_op.ply0b_interply_D_multiplier = 1;
+default_op.ply90b_interply_rho_multiplier = 1;
+default_op.ply90b_interply_D_multiplier = 1;
 %   v2 - Intraply boundary options
 default_op.intraply_boundary = 0;
 default_op.intraply_layer1 = 'resin_intra';
@@ -99,6 +106,9 @@ end
 %Ply options
 if op.n_plys_per_type == 0
     error('Option error: n_plys_per_type must be an integer > 0')
+end
+if ~op.interply_boundary && op.interply_el_thickness
+    error('Option error: set op.interply_boundary = 0 if op.interply_el_thickness != 0')
 end
 %Water options
 if op.water_interface_perc && op.water_interface_single
