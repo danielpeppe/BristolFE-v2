@@ -20,7 +20,7 @@ ply_symmetry = op.ply_symmetry;
 interply_boundary = op.interply_boundary;
 interply_first_layer = op.interply_first_layer;
 interply_last_layer = op.interply_last_layer;
-interply_el_thickness = op.interply_el_thickness;
+interply_el_thickness_perc = op.interply_el_thickness_perc;
 intraply_boundary = op.intraply_boundary;
 %Define material indices of composite layers
 layer1_i = fn_matl_i(matls, op.layer1);
@@ -45,6 +45,8 @@ if abs(interply_last_layer) > 1 || abs(interply_first_layer) > 1
 end
 %Calculate ply layer heights so ply material is applied to specific layers
 el_height = mod.el_height; %Calculated in fn_isometric_structured mesh
+n_els_in_ply_wi = geom.specimen_height/n_ply_layers/el_height;
+interply_el_thickness = ceil(interply_el_thickness_perc * n_els_in_ply_wi);
 interply_height = interply_el_thickness * el_height;
 if interply_height == 0
     interply_boundary = 0;
@@ -126,13 +128,21 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
                 if layer_in_type < n_plys_per_type || is_middle_layer && ply_symmetry
                     %Set intRAply material
                     mod = set_target_layer_material(mod, geom, intraply_matl_i, interply_height, height_completed);
-                else %layer_in_type == n_plys_per_type && ~(interply_last_layer == 0 && target_layer == n_ply_layers) %weird logic but it works!
+                elseif interply_last_layer == 0 && target_layer == n_ply_layers
+                    %Set PLY material
+                    mod = set_target_layer_material(mod, geom, matl_i, interply_height, height_completed);
+                else
                     %Set interply material
                     mod = set_target_layer_material(mod, geom, interply_matl_i, interply_height, height_completed);
                 end
             else
-                %Set boundary as interply material
-                mod = set_target_layer_material(mod, geom, interply_matl_i, interply_height, height_completed);
+                if interply_last_layer == 0 && target_layer == n_ply_layers
+                    %Set PLY material
+                    mod = set_target_layer_material(mod, geom, matl_i, interply_height, height_completed);
+                else
+                    %Set interply material
+                    mod = set_target_layer_material(mod, geom, interply_matl_i, interply_height, height_completed);
+                end
             end
             %Update height
             height_completed = height_completed + interply_height;
@@ -152,7 +162,7 @@ end
 %Calculate deviation from true specimen height
 model_specimen_height = height_completed;
 model_accuracy = round(100*model_specimen_height/geom.specimen_height, 2);
-fprintf("Specimen model height accuracy: %.2f%% (el=%.2f%%)\n", model_accuracy, 100*el_height/geom.specimen_height)
+fprintf("Specimen model height accuracy: %.2f%% (els=%.2f%%)\n", model_accuracy, 100*el_height/geom.specimen_height)
 if abs(100 - model_accuracy) > 5
     warning('Specimen model accuracy is less than 95%')
 end
@@ -176,7 +186,7 @@ if interply_boundary
             norm(matls(interply_layer2_i).D)/norm(matls(layer2_i).D)]);
     %Print results
     interply_perc = round(100*interply_els/total_els,2);
-    fprintf("Interply elements: Proportion:       %.2f%%\n", interply_perc)
+    fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", interply_perc, interply_el_thickness)
     fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*interply_perc)
     fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*interply_perc) %stiffness impact is approximate
 end
