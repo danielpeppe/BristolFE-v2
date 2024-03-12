@@ -1,17 +1,21 @@
-function [mod, new_top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specimen_brdy_pts, model_height)
+function [mod, comp] = fn_set_ply_material_v2(mod, op, matls)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
 fprintf("Set Ply Materials (v2)\n")
-%Ensure specimen_brdy_pts is a double precision matrix
-specimen_brdy_pts = double(specimen_brdy_pts);
 
 %Put key geometry consts in a struct
-geom.model_height = model_height;
-geom.specimen_width = specimen_brdy_pts(2,1);
+geom.specimen_height = op.specimen_size;
+geom.specimen_width = max(mod.nds(:,1));
+geom.model_height = max(mod.nds(:,2));
 safety_margin_perc = 0.3; %arbitrary
 geom.safety_margin = geom.specimen_width * safety_margin_perc; %Apply margin to x so that -ve x values are captured
-geom.specimen_height = specimen_brdy_pts(3,2) - specimen_brdy_pts(1,2);
+% OLD METHOD
+%Ensure specimen_brdy_pts is a double precision matrix
+% specimen_brdy_pts = double(specimen_brdy_pts);
+% geom.model_height = model_height;
+% geom.specimen_width = specimen_brdy_pts(2,1);
+% geom.specimen_height = specimen_brdy_pts(3,2) - specimen_brdy_pts(1,2);
 
 %Define and declare options used
 n_ply_layers = op.n_ply_layers;
@@ -193,7 +197,7 @@ end
 
 
 %% Return top of specimen (because new height != defined specimen height)
-new_top_of_specimen = height_completed;
+comp.new_top_of_specimen = height_completed;
 
 
 end
