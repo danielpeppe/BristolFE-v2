@@ -179,7 +179,7 @@ if interply_boundary
         layer_els = layer_els + sum(mod.el_mat_i == matl_i);
     end
     interply_els = 0;
-    for matl_i = [interply_layer1_i, interply_layer1_i]
+    for matl_i = [interply_layer1_i, interply_layer2_i intraply_layer2_i intraply_layer2_i]
         interply_els = interply_els + sum(mod.el_mat_i == matl_i);
     end
     total_els = layer_els + interply_els;
