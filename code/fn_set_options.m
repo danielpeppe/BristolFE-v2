@@ -87,6 +87,8 @@ default_op.params = [];
 %Output scaling
 default_op.plot_scale_dsps = 1;
 default_op.plot_scale_time = 1;
+%Testing horizontal speed
+default_op.test_horizontal_speed = 0;
 
 %% SET DEFAULT OPTIONS
 
@@ -147,6 +149,20 @@ elseif strcmpi(op.src_matl,'solid_horizontal')
     op.src_dir = 1;
 else
     error('Option error: set op.src_matl to water, solid, or solid_horizontal')
+end
+
+%% TESTING HORIZONTAL SPEED
+
+if op.test_horizontal_speed
+    op.solid_specimen = 1;
+    op.src_matl = 'solid_horizontal';
+    op.composite_specimen = 0;
+    op.lower_water_present = 0;
+    op.water_bdry_thickness_perc = 0;
+    op.abs_bdry_thickness_perc = 0;
+    op.model_width_multiplier = 1;
+    op.rayleigh_quality_factor = inf;
+    op.max_time = 2 * 3.5e-6;
 end
 
 %% VALIDATE OUTPUT
