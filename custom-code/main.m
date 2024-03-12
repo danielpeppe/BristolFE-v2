@@ -26,10 +26,6 @@ op_output.animate = 0;
 op.plot_scale_dsps = 1.75; %1.75
 op.plot_scale_time = 1;
 
-% op.separate_receiver = 1;
-% op.solid_specimen = 1;
-% op.composite_specimen = 0;
-
 %% TUNING
 
 %Transducer options
@@ -147,13 +143,13 @@ rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[
 %ply90
 E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 0.436;
 mat.ply90.rho = 1570 * op.ply90_rho_multiplier;
-mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(op.ply0_orientation, E_fib, G_fib * op.ply90_G_x_multiplier, v_fib, E_t * op.ply90_E_t_multiplier, G_t, v_t);
+mat.ply90.D = op.ply90_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(op.ply90_orientation, E_fib, G_fib * op.ply90_G_x_multiplier, v_fib, E_t * op.ply90_E_t_multiplier, G_t, v_t);
 mat.ply90.rayleigh_coefs = rayleigh_coefs;
 mat.ply90.col = hsv2rgb([3/4,0.3,0.80]); %purple
 mat.ply90.el_typ = 'CPE3';
 %ply0
 mat.ply0.rho = 1570 * op.ply0_rho_multiplier;
-mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(op.ply90_orientation, E_fib, G_fib * op.ply90_G_x_multiplier, v_fib, E_t * op.ply0_E_t_multiplier, G_t, v_t);
+mat.ply0.D = op.ply0_D_multiplier * fn_trans_isotropic_plane_strain_stiffness_matrix(op.ply0_orientation, E_fib, G_fib * op.ply0_G_x_multiplier, v_fib, E_t * op.ply0_E_t_multiplier, G_t, v_t);
 mat.ply0.rayleigh_coefs = rayleigh_coefs;
 mat.ply0.col = hsv2rgb([1/4,0,0.80]);
 mat.ply0.el_typ = 'CPE3';
@@ -266,13 +262,14 @@ if op.solidwater
 end
 %Set specimen materials
 if op.solid_specimen
-    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls,'steel'));
+    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls,'ply90'));
 elseif op.composite_specimen
     if op.upper_water_present
         [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
     else
         %v2 does not suppot op.upper_water_present
-        [mod, new_top_of_specimen] = fn_set_ply_material_v2(mod, op, matls, specimen_brdy_pts, model_height);
+        [mod, comp] = fn_set_ply_material_v2(mod, op, matls);
+        top_of_specimen = comp.new_top_of_specimen;
     end
 end
 
@@ -283,8 +280,8 @@ mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
 %% ADD POROSITY (WIP)
 
-n_pores = 10;
-mod = fn_add_porosity(mod, n_pores);
+porosity = 0.1;
+mod = fn_add_porosity_v2(mod, porosity);
 
 %% DEFINE PROBE END POINTS
 
@@ -305,7 +302,7 @@ else
 end
 
 %Define src end points
-if ~strcmpi(op.src_matl,'horizontal')
+if ~strcmpi(op.src_matl,'solid_horizontal')
     src_end_pts = [
         model_width/2 - aperture_width/2, top_of_specimen + src_offset
         model_width/2 + aperture_width/2, top_of_specimen + src_offset];
