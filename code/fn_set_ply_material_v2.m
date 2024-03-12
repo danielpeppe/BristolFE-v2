@@ -5,17 +5,15 @@ function [mod, comp] = fn_set_ply_material_v2(mod, op, matls)
 fprintf("Set Ply Materials (v2)\n")
 
 %Put key geometry consts in a struct
-geom.specimen_height = op.specimen_size;
-geom.specimen_width = max(mod.nds(:,1));
-geom.model_height = max(mod.nds(:,2));
-safety_margin_perc = 0.3; %arbitrary
-geom.safety_margin = geom.specimen_width * safety_margin_perc; %Apply margin to x so that -ve x values are captured
+comp.specimen_height = op.specimen_size;
+comp.specimen_width = max(mod.nds(:,1));
+comp.model_height = max(mod.nds(:,2));
 % OLD METHOD
 %Ensure specimen_brdy_pts is a double precision matrix
 % specimen_brdy_pts = double(specimen_brdy_pts);
-% geom.model_height = model_height;
-% geom.specimen_width = specimen_brdy_pts(2,1);
-% geom.specimen_height = specimen_brdy_pts(3,2) - specimen_brdy_pts(1,2);
+% comp.model_height = model_height;
+% comp.specimen_width = specimen_brdy_pts(2,1);
+% comp.specimen_height = specimen_brdy_pts(3,2) - specimen_brdy_pts(1,2);
 
 %Define and declare options used
 n_ply_layers = op.n_ply_layers;
@@ -49,7 +47,7 @@ if abs(interply_last_layer) > 1 || abs(interply_first_layer) > 1
 end
 %Calculate ply layer heights so ply material is applied to specific layers
 el_height = mod.el_height; %Calculated in fn_isometric_structured mesh
-n_els_in_ply_wi = geom.specimen_height/n_ply_layers/el_height;
+n_els_in_ply_wi = comp.specimen_height/n_ply_layers/el_height;
 interply_el_thickness = ceil(interply_el_thickness_perc * n_els_in_ply_wi);
 interply_height = interply_el_thickness * el_height;
 if interply_height == 0
@@ -57,9 +55,9 @@ if interply_height == 0
 end
 if interply_boundary
     n_interply_layers = (n_ply_layers - 1) + interply_last_layer + interply_first_layer;
-    ply_height = (geom.specimen_height - n_interply_layers*interply_height)/n_ply_layers;
+    ply_height = (comp.specimen_height - n_interply_layers*interply_height)/n_ply_layers;
 else
-    ply_height = geom.specimen_height/n_ply_layers;
+    ply_height = comp.specimen_height/n_ply_layers;
 end
 %Alternate between upper and lower ply heights
 height_offset = rem(ply_height, el_height);
@@ -77,6 +75,7 @@ ply_height_upper = ply_height_lower + el_height;
 %Assign materials
 matl_oscillator = 1;
 height_completed = 0;
+comp.ply_location_tracker = cell(n_ply_layers, 2); %used to distribute porosity in another function
 %Loop over ply types
 for ply_type = 1:n_ply_layers/n_plys_per_type
     %This changes ply material when needed
@@ -93,7 +92,7 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
     end
     %Apply resin to first layer if enabled
     if interply_boundary && interply_first_layer && height_completed == 0
-        mod = set_target_layer_material(mod, geom, interply_matl_i, interply_height, height_completed);
+        mod = set_target_layer_material(mod, comp, interply_matl_i, interply_height, height_completed);
         %Update height again
         height_completed = height_completed + interply_height;
     end
@@ -120,32 +119,34 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         % fn_show_geometry(mod, matls, display_options);
         % yline(model_height - true_height, 'Color','r')
         % yline(model_height - height_completed, 'Color','g')
-
+        
         %Set materials in target layer
-        mod = set_target_layer_material(mod, geom, matl_i, ply_target_height, height_completed);
+        mod = set_target_layer_material(mod, comp, matl_i, ply_target_height, height_completed);
         %Update height of material changed in specimen
+        comp.ply_location_tracker{target_layer, 1} = height_completed;
         height_completed = height_completed + ply_target_height;
+        comp.ply_location_tracker{target_layer, 2} = height_completed;
         
         %Set interply boundaries if enabled
         if interply_boundary
             if intraply_boundary
                 if layer_in_type < n_plys_per_type || is_middle_layer && ply_symmetry
                     %Set intRAply material
-                    mod = set_target_layer_material(mod, geom, intraply_matl_i, interply_height, height_completed);
+                    mod = set_target_layer_material(mod, comp, intraply_matl_i, interply_height, height_completed);
                 elseif interply_last_layer == 0 && target_layer == n_ply_layers
                     %Set PLY material
-                    mod = set_target_layer_material(mod, geom, matl_i, interply_height, height_completed);
+                    mod = set_target_layer_material(mod, comp, matl_i, interply_height, height_completed);
                 else
                     %Set interply material
-                    mod = set_target_layer_material(mod, geom, interply_matl_i, interply_height, height_completed);
+                    mod = set_target_layer_material(mod, comp, interply_matl_i, interply_height, height_completed);
                 end
             else
                 if interply_last_layer == 0 && target_layer == n_ply_layers
                     %Set PLY material
-                    mod = set_target_layer_material(mod, geom, matl_i, interply_height, height_completed);
+                    mod = set_target_layer_material(mod, comp, matl_i, interply_height, height_completed);
                 else
                     %Set interply material
-                    mod = set_target_layer_material(mod, geom, interply_matl_i, interply_height, height_completed);
+                    mod = set_target_layer_material(mod, comp, interply_matl_i, interply_height, height_completed);
                 end
             end
             %Update height
@@ -165,8 +166,8 @@ end
 
 %Calculate deviation from true specimen height
 model_specimen_height = height_completed;
-model_accuracy = round(100*model_specimen_height/geom.specimen_height, 2);
-fprintf("Specimen model height accuracy: %.2f%% (els=%.2f%%)\n", model_accuracy, 100*el_height/geom.specimen_height)
+model_accuracy = round(100*model_specimen_height/comp.specimen_height, 2);
+fprintf("Specimen model height accuracy: %.2f%% (els=%.2f%%)\n", model_accuracy, 100*el_height/comp.specimen_height)
 if abs(100 - model_accuracy) > 5
     warning('Specimen model accuracy is less than 95%')
 end
@@ -189,10 +190,11 @@ if interply_boundary
     D_impact = mean([norm(matls(interply_layer1_i).D)/norm(matls(layer2_i).D),...
             norm(matls(interply_layer2_i).D)/norm(matls(layer2_i).D)]);
     %Print results
-    interply_perc = round(100*interply_els/total_els,2);
-    fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", interply_perc, interply_el_thickness)
-    fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*interply_perc)
-    fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*interply_perc) %stiffness impact is approximate
+    comp.interply_volume_frac = round(100*interply_els/total_els,2);
+    comp.ply_volume_frac = 1 - comp.interply_volume_frac; %used in porosity function
+    fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", comp.interply_volume_frac, interply_el_thickness)
+    fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*comp.interply_volume_frac)
+    fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*comp.interply_volume_frac) %stiffness impact is approximate
 end
 
 
@@ -203,11 +205,11 @@ comp.new_top_of_specimen = height_completed;
 end
 
 
-function mod = set_target_layer_material(mod, geom, matl_i, target_height, height_completed)
+function mod = set_target_layer_material(mod, comp, matl_i, target_height, height_completed)
 %Extract key geometry consts
-model_height = geom.model_height;
-specimen_width = geom.specimen_width;
-safety_margin = geom.safety_margin;
+model_height = comp.model_height;
+specimen_width = comp.specimen_width;
+safety_margin_x = specimen_width * 0.3; %arbitrary (just to capture all x-nodes)
 
 %Boundary points of target layer
 bdry_pts = [0,               0
@@ -220,10 +222,10 @@ bdry_pts = bdry_pts + (model_height - height_completed)*[0 1
                                                          0 1
                                                          0 1];
 %Apply safety margin to x-coords
-bdry_pts = bdry_pts + safety_margin*[-1 0
-                                      1 0
-                                      1 0
-                                     -1 0];
+bdry_pts = bdry_pts + safety_margin_x*[-1 0
+                                        1 0
+                                        1 0
+                                       -1 0];
 %Change materials
 mod = fn_set_els_inside_bdry_to_mat(mod, bdry_pts, matl_i);
 end
