@@ -14,7 +14,7 @@ aperture = 1:op.aperture_n_els;
 aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
 aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
 %Iterate over sim results
-for i = 1:length(params)
+for i = 1:length(res)
     res_sum_dsps = sum(res{1,i}{1}.dsps); %tmp for readability
     %Scale sim data to exp data
     scale_dsp = max(abs(aperture_dsp_data))/max(abs(res_sum_dsps)); %Scale exp response to match sim response
