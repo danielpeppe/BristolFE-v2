@@ -59,8 +59,6 @@ element_node3d = node_numbers(3:2:end, 1:end-1);
 
 %Final m x 2 matrix of x and y coordinates for each node
 mod.nds = [node_x_positions(:), node_y_positions(:)];
-%Save element height for use in assigning composite material layers later
-mod.el_height = mod.nds(2,2) - mod.nds(1,2);
 %Final n x 3 matrix of 3 node numbers for each element
 mod.els = [
     element_node1a(:), element_node2a(:), element_node3a(:)
@@ -69,12 +67,18 @@ mod.els = [
     element_node1d(:), element_node2d(:), element_node3d(:)
     ];
 
+%Store element height for later use
+mod.el_height = mod.nds(2,2) - mod.nds(1,2);
+%Store element centres for later use
+mod.el_centres = fn_calc_element_centres(mod.nds, mod.els);
+
 %Now remove elements outside original boundary
 [in, out] = fn_elements_in_region(mod, bdry_pts);
 mod.els(out, :) = [];
-
 %Tidy up by removing unused nodes
 [mod.nds, mod.els] = fn_remove_unused_nodes(mod.nds, mod.els);
+%Calculate element centres again
+mod.el_centres = fn_calc_element_centres(mod.nds, mod.els);
 
 %Associate each element with a material index = 1
 n_els = size(mod.els, 1);
