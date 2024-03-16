@@ -43,17 +43,18 @@ elseif op.porosity_use_density
     fprintf("               max rho reduction: %.2f times\n", 1/(1 - pi*sqrt(3)*((porosity_r_max^2/mod.el_height^2))))
     %Loop over pore types
     col_sat_arr = linspace(0.25, 1, op.porosity_n_pore_matls);
+    col_brightness_arr = linspace(0.5, 1, numel(op.porosity_ply_matls));
     pore_r_arr = linspace(porosity_r_min, porosity_r_max, op.porosity_n_pore_matls);
     mat = struct();
     for i = 1:op.porosity_n_pore_matls
         %Loop over materials which will contrain porosity
-        for ply_mat = op.porosity_ply_matls
-            ply_mat_i = fn_matl_i(matls, ply_mat);
-            pore_mat_field = strcat(ply_mat,"_pore",string(i));
+        for ii = 1:length(op.porosity_ply_matls)
+            ply_mat_i = fn_matl_i(matls, op.porosity_ply_matls(ii));
+            pore_mat_field = strcat(op.porosity_ply_matls(ii),"_pore",string(i));
             %Define density in terms of radius of pore
             mat.(pore_mat_field).rho = matls(ply_mat_i).rho*(1 - pi*sqrt(3)*((pore_r_arr(i)^2/mod.el_height^2)));
             mat.(pore_mat_field).D = matls(ply_mat_i).D;
-            mat.(pore_mat_field).col = hsv2rgb([0.2, col_sat_arr(i), 1]);
+            mat.(pore_mat_field).col = hsv2rgb([1, col_sat_arr(i), col_brightness_arr(ii)]); %just make sure colours are distinct, strange calculation here
             mat.(pore_mat_field).el_typ = 'CPE3';
         end
     end
@@ -193,10 +194,10 @@ else
             %Get correct ply material
             ply_mat = matls(mod.el_mat_i(pore_el_i)).name;
             %Find best suited pore material to assign to pore element
-            [~, pore_mat_i] = min(abs([pore_matls.(ply_mat)(:).rho] - pore_rho));
+            [~, pore_mat_i_in_pore_matls] = min(abs([pore_matls.(ply_mat)(:).rho] - pore_rho));
             %Assign pore material
-            n_non_pore_matls = numel(matls) - length(op.porosity_ply_matls)*op.porosity_n_pore_matls;
-            mod.el_mat_i(pore_el_i) = pore_mat_i + n_non_pore_matls; %ensure index is consistent with matls
+            pore_mat_i_in_matls = find(strcmp({matls.name}, pore_matls.(ply_mat)(pore_mat_i_in_pore_matls).name));
+            mod.el_mat_i(pore_el_i) = pore_mat_i_in_matls;
         end
     end
     %Validate porosity material has been assigned to model elements
