@@ -13,19 +13,17 @@ op.porosity = 1; %[%]
 %Dists
 op.porosity_dist_sigma_tuner = 1.5;
 op.porosity_dist_mu_tuner = 1.5; %0.5-1.5
-op.porosity_dist_n_samples_sf = 1.5;
 %Morphology
 op.porosity_r_min = 1e-6; %[m]
 op.porosity_r_max = 3e-6;
 %Matls
 op.porosity_use_void = 0;
 op.porosity_use_air = 0;
-
-op.porosity_use_density = 0;
-op.porosity_el_size_safety_factor = 1; %>1 %Tune this for stability
+%   Density
+op.porosity_use_density = 1;
 op.porosity_sigma_tuner = 1;
 op.porosity_mu_tuner = 1;
-
+%   Damping
 op.porosity_use_damping = 0;
 %Output
 % op_output.porosity_signal = 0;
@@ -40,12 +38,12 @@ anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
 op.max_time = 3.5e-6; %3.5e-6;
 %Output for each sim
-op_output.justgeometry = 1; %disables other outputs
-op_output.geometry = 0;
+op_output.justgeometry = 0; %disables other outputs
+op_output.geometry = 1;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 0;
 op_output.plot_exp_data = 0;
-op_output.animate = 1;
+op_output.animate = 0;
 %Scale
 op.plot_scale_dsps = 1.75; %1.75
 op.plot_scale_time = 1;
@@ -97,6 +95,7 @@ op.params = [];
 % op.params = [0 1];
 % op.params = [0.1 0.5 1 1.5 2.5];
 % op.params = [1 0.1 0];
+op.params = [3e-6 4e-6 5e-6];
 
 %% RUNNING SIM
 
@@ -119,7 +118,7 @@ else
         % op.els_per_wavelength = op.params(i);
         % op.intraply_layer1 = op.params{i,1}; op.intraply_layer2 = op.params{i,2};
         % op.ply0_orientation = op.params{1,i}(1); op.ply90_orientation = op.params{1,i}(2);
-        op.porosity = p;
+        op.porosity_r_max = p;
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         [op, op_output] = fn_set_options(op, op_output);
         fprintf("--------------------------------------------------------------------------------------\n")
@@ -268,7 +267,6 @@ abs_bdry_pts = [
 
 %Work out element size (slightly different from actual element size)
 el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
-el_size = el_size / op.porosity_el_size_safety_factor;
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 

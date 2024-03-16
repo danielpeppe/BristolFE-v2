@@ -101,7 +101,6 @@ default_op.porosity_r_min = 1e-6; %[m]
 default_op.porosity_r_max = 2e-6;
 default_op.porosity_r_max_multiplier = 1;
 default_op.porosity_ply_matls = ["ply0","ply90"];
-default_op.porosity_el_size_safety_factor = 1;
 default_op.porosity_plot_dists = 0;
 %Porosity Material
 default_op.porosity_use_void = 0;
