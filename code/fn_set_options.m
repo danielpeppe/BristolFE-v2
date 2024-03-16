@@ -36,8 +36,8 @@ default_op.layer2 = 'ply0';
 default_op.ply0_rho_multiplier = 1;
 default_op.ply90_rho_multiplier = 1;
 %   stiffness
-default_op.ply90_D_multiplier = 1;
-default_op.ply0_D_multiplier = 1;
+default_op.ply90_D_multiplier = 1.1;
+default_op.ply0_D_multiplier = 1.1;
 default_op.ply90_E_t_multiplier = 1;
 default_op.ply0_E_t_multiplier = 1;
 default_op.ply90_G_x_multiplier = 1;
@@ -73,8 +73,8 @@ default_op.intraply_D_multiplier = 1;
 default_op.water_bdry_thickness_perc = 0.25; %0.25 is default (>abs_bdry_thickness_perc)
 default_op.upper_water_present = 0;
 default_op.lower_water_present = 1;
-default_op.water_rho_multiplier = 1;
-default_op.water_D_multiplier = 1;
+default_op.water_rho_multiplier = 1.5;
+default_op.water_D_multiplier = 1.5;
 %Solid water options
 default_op.solidwater = 0;
 default_op.solidwater_rho_multiplier = 1;
@@ -89,6 +89,25 @@ default_op.plot_scale_dsps = 1;
 default_op.plot_scale_time = 1;
 %Testing horizontal speed
 default_op.test_horizontal_speed = 0;
+%Porosity
+default_op.porosity = 0;
+default_op.porosity_dist_sigma_tuner = 1.5;
+default_op.porosity_dist_mu_tuner = 1; %0.5-1.5
+default_op.porosity_dist_n_samples_sf = 1.5;
+default_op.porosity_sigma_tuner = 1;
+default_op.porosity_mu_tuner = 1;
+default_op.porosity_n_pore_matls = 100;
+default_op.porosity_r_min = 1e-6; %[m]
+default_op.porosity_r_max = 2e-6;
+default_op.porosity_r_max_multiplier = 1;
+default_op.porosity_ply_matls = ["ply0","ply90"];
+default_op.porosity_el_size_safety_factor = 1;
+default_op.porosity_plot_dists = 0;
+%Porosity Material
+default_op.porosity_use_void = 0;
+default_op.porosity_use_air = 0;
+default_op.porosity_use_density = 0;
+default_op.porosity_use_damping = 0;
 
 %% SET DEFAULT OPTIONS
 
@@ -149,6 +168,16 @@ elseif strcmpi(op.src_matl,'solid_horizontal')
     op.src_dir = 1;
 else
     error('Option error: set op.src_matl to water, solid, or solid_horizontal')
+end
+%Porosity options
+if  op.porosity_use_void + op.porosity_use_air + op.porosity_use_density + op.porosity_use_damping > 1
+    error('Option error: chose only 1 porosity_use material')
+end
+if  ~op.porosity_n_pore_matls && (op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
+    error('Option error: number of pore materials is set to 0, not porosity_use materials have been set')
+end
+if op.porosity && ~(op.porosity_use_void || op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
+    error('Option error: porosity is enabled, but material has not been defined')
 end
 
 %% TESTING HORIZONTAL SPEED

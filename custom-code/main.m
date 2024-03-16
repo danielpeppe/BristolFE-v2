@@ -1,6 +1,6 @@
 clear;
 close all;
-restoredefaultpath;
+% restoredefaultpath;
 addpath('../code');
 
 %% LOAD EXPERIMENTAL DATA
@@ -8,6 +8,30 @@ addpath('../code');
 load('g4-s8_x-8000_z0_025.mat','exp_data');
 
 %% DEFINE OUTPUT
+
+op.porosity = 1; %[%]
+%Dists
+op.porosity_dist_sigma_tuner = 1.5;
+op.porosity_dist_mu_tuner = 1.5; %0.5-1.5
+op.porosity_dist_n_samples_sf = 1.5;
+%Morphology
+op.porosity_r_min = 1e-6; %[m]
+op.porosity_r_max = 3e-6;
+%Matls
+op.porosity_use_void = 0;
+op.porosity_use_air = 0;
+
+op.porosity_use_density = 0;
+op.porosity_el_size_safety_factor = 1; %>1 %Tune this for stability
+op.porosity_sigma_tuner = 1;
+op.porosity_mu_tuner = 1;
+
+op.porosity_use_damping = 0;
+%Output
+% op_output.porosity_signal = 0;
+op.porosity_plot_dists = 0;
+
+
 
 %Resolution options
 op.els_per_wavelength = 15; %increases are non-linear
@@ -21,7 +45,7 @@ op_output.geometry = 0;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 0;
 op_output.plot_exp_data = 0;
-op_output.animate = 0;
+op_output.animate = 1;
 %Scale
 op.plot_scale_dsps = 1.75; %1.75
 op.plot_scale_time = 1;
@@ -72,6 +96,7 @@ op.params = [];
 % op.params = {[0,90],[0,-90]};
 % op.params = [0 1];
 % op.params = [0.1 0.5 1 1.5 2.5];
+% op.params = [1 0.1 0];
 
 %% RUNNING SIM
 
@@ -92,18 +117,9 @@ else
         p = op.params(i);
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
         % op.els_per_wavelength = op.params(i);
-        % op.rayleigh_quality_factor = op.params(i);
         % op.intraply_layer1 = op.params{i,1}; op.intraply_layer2 = op.params{i,2};
         % op.ply0_orientation = op.params{1,i}(1); op.ply90_orientation = op.params{1,i}(2);
-        % op.interply_rho_multiplier = op.params(i);
-        % op.interply_D_multiplier = op.params(i);
-        % op.test6 = op.params(i);
-        % op.water_interface_perc = op.params(i);
-        % op.solidwater = op.params(i);
-        % op.upper_water_present = op.params(i);
-        % op.water_interface_single = op.params(i);
-        op.water_rho_multiplier = p;
-        op.water_D_multiplier = p;
+        op.porosity = p;
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         [op, op_output] = fn_set_options(op, op_output);
         fprintf("--------------------------------------------------------------------------------------\n")
@@ -112,6 +128,13 @@ else
     end
     %Plot results
     fn_plot_signal(op, res, steps, exp_data)
+
+    % if op_output.porosity_signal
+    %     pristine_signal = res{1,1}{1}.dsps;
+    %     porous_signal = res{1,2}{1}.dsps;
+    %     porosity_signal{1,1}{1}.dsps = pristine_signal - porous_signal;
+    %     fn_plot_signal(op, porosity_signal, steps, exp_data)
+    % end
 end
 
 function [res, steps] = run_sim(op, op_output, fe_options, anim_options, exp_data)
@@ -196,7 +219,7 @@ mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3);
 mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
 mat.steel.el_typ = 'CPE3';
 
-%Get matls struct from mat struct
+%Define matls struct from mat
 [matls, R_coefs] = fn_get_matls_struct(op, mat);
 
 %% DEFINE SHAPE OF MODEL
@@ -245,10 +268,19 @@ abs_bdry_pts = [
 
 %Work out element size (slightly different from actual element size)
 el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
+el_size = el_size / op.porosity_el_size_safety_factor;
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 
-%% DEFINE MATERIALS
+%% PRINT IMPORTANT INFORMATION
+
+% fprintf('el_size: %.2f um\n', el_size * 1e6)
+% [max_vel, min_vel] = fn_estimate_max_min_vels(matls, op.scale_units);
+% avg_vel = (min_vel + max_vel) / 2;
+% wavelengths = [min_vel max_vel avg_vel] / op.centre_freq * 1e6; %[um]
+% fprintf('US wavelengths: min: %.2f, max: %.2f, avg: %.2f um\n', wavelengths)
+
+%% SET MATERIALS IN MESH
 
 %First set all elements to water
 mod.el_mat_i(:) = fn_matl_i(matls,'water');
@@ -269,19 +301,18 @@ elseif op.composite_specimen
     else
         %v2 does not suppot op.upper_water_present
         [mod, comp] = fn_set_ply_material_v2(mod, op, matls);
-        top_of_specimen = comp.new_top_of_specimen;
     end
 end
+
+%Add porosity
+%Doesn't support intRAply layers or 2 types of intERply layers
+[mod, matls] = fn_add_porosity_v4(op, mod, matls, comp);
 
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
 %Define the absorbing layer
 mod = fn_add_absorbing_layer(mod, abs_bdry_pts, abs_bdry_thickness);
 
-%% ADD POROSITY (WIP)
-
-porosity = 0.1;
-mod = fn_add_porosity_v2(mod, porosity);
 
 %% DEFINE PROBE END POINTS
 
@@ -302,14 +333,14 @@ else
 end
 
 %Define src end points
-if ~strcmpi(op.src_matl,'solid_horizontal')
-    src_end_pts = [
-        model_width/2 - aperture_width/2, top_of_specimen + src_offset
-        model_width/2 + aperture_width/2, top_of_specimen + src_offset];
-else
+if strcmpi(op.src_matl,'solid_horizontal')
     src_end_pts = [
         0, 0.25 * model_height
         0, 0.75 * model_height];
+else
+    src_end_pts = [
+        model_width/2 - aperture_width/2, top_of_specimen + src_offset
+        model_width/2 + aperture_width/2, top_of_specimen + src_offset]; 
 end
 
 %% DEFINE LOADS

@@ -123,9 +123,9 @@ for ply_type = 1:n_ply_layers/n_plys_per_type
         %Set materials in target layer
         mod = set_target_layer_material(mod, comp, matl_i, ply_target_height, height_completed);
         %Update height of material changed in specimen
-        comp.ply_location_tracker{target_layer, 1} = height_completed;
+        comp.ply_location_tracker{target_layer, 1} = comp.model_height - height_completed;
         height_completed = height_completed + ply_target_height;
-        comp.ply_location_tracker{target_layer, 2} = height_completed;
+        comp.ply_location_tracker{target_layer, 2} = comp.model_height - height_completed;
         
         %Set interply boundaries if enabled
         if interply_boundary
@@ -190,17 +190,22 @@ if interply_boundary
     D_impact = mean([norm(matls(interply_layer1_i).D)/norm(matls(layer2_i).D),...
             norm(matls(interply_layer2_i).D)/norm(matls(layer2_i).D)]);
     %Print results
-    comp.interply_volume_frac = round(100*interply_els/total_els,2);
+    comp.interply_volume_frac = interply_els/total_els;
     comp.ply_volume_frac = 1 - comp.interply_volume_frac; %used in porosity function
-    fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", comp.interply_volume_frac, interply_el_thickness)
-    fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*comp.interply_volume_frac)
-    fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*comp.interply_volume_frac) %stiffness impact is approximate
+    interply_volume_frac_disp = round(100*comp.interply_volume_frac,2);
+    fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", interply_volume_frac_disp, interply_el_thickness)
+    fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*interply_volume_frac_disp)
+    fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*interply_volume_frac_disp) %stiffness impact is approximate
 end
 
+%% Put material indices in comp struct
 
-%% Return top of specimen (because new height != defined specimen height)
-comp.new_top_of_specimen = height_completed;
-
+comp.matl_i.layer1_i = layer1_i;
+comp.matl_i.layer2_i = layer2_i;
+comp.matl_i.interply_layer1_i = interply_layer1_i;
+comp.matl_i.interply_layer2_i = interply_layer2_i;
+comp.matl_i.intraply_layer1_i = intraply_layer1_i;
+comp.matl_i.intraply_layer2_i = intraply_layer2_i;
 
 end
 
@@ -226,6 +231,6 @@ bdry_pts = bdry_pts + safety_margin_x*[-1 0
                                         1 0
                                         1 0
                                        -1 0];
-%Change materials
+%Set material
 mod = fn_set_els_inside_bdry_to_mat(mod, bdry_pts, matl_i);
 end
