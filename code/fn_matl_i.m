@@ -1,4 +1,4 @@
-function matl_i = fn_matl_i(matls,matl_string)
+function matl_i = fn_matl_i(matls, matl_string)
 %FN_MATL_I Summary of this function goes here
 %   Detailed explanation goes here
 matl_i = [];
