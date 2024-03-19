@@ -92,25 +92,29 @@ default_op.plot_scale_time = 1;
 default_op.test_horizontal_speed = 0;
 %Porosity
 default_op.porosity = 1;
-default_op.porosity_range = [0 5];
+default_op.porosity_matls_for_pores = ["ply0"];
+%   Spatial
 default_op.porosity_dist_sigma_tuner = 1;
 default_op.porosity_dist_mu_tuner = 1; %0.5-1.5
 default_op.porosity_dist_n_samples_sf = 3;
+%   Radii
 default_op.porosity_r_sigma_tuner = 1;
 default_op.porosity_n_pore_matls = 100;
 default_op.porosity_r_min = 1e-6; %[m]
 default_op.porosity_r_max = 5e-6;
-default_op.porosity_matls_for_pores = ["ply0"];
-default_op.porosity_plot_dists = 0;
-%Porosity Material
+%   Voids
 default_op.porosity_use_void = 0;
-default_op.porosity_use_air = 0;
+%   Density
 default_op.porosity_use_density = 1;
-default_op.porosity_use_damping = 0;
+%   Damping
+default_op.porosity_damping_tuner = 1;
+%   Output
+default_op.porosity_plot_dists = 0;
 %Data generation options
 default_op.data_gen = 0;
 default_op.data_gen_batch_size = 0;
 default_op.data_gen_vars = {};
+default_op.porosity_range = [0 5];
 
 %% SET DEFAULT OPTIONS
 
@@ -178,13 +182,13 @@ end
 if ischar(op.porosity_matls_for_pores)
     error("Option error: op.porosity_ply_matls has to be a list of strings (not chars)")
 end
-if  op.porosity_use_void + op.porosity_use_air + op.porosity_use_density + op.porosity_use_damping > 1
+if  op.porosity_use_void + op.porosity_use_density > 1
     error("Option error: chose only 1 porosity_use material")
 end
-if  ~(op.porosity_n_pore_matls || op.porosity) && (op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
+if  ~(op.porosity_n_pore_matls || op.porosity) && (op.porosity_use_void || op.porosity_use_density)
     error("Option error: number of pore materials is set to 0, not porosity_use materials have been set")
 end
-if op.porosity == 1 && ~(op.porosity_use_void || op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
+if op.porosity == 1 && ~(op.porosity_use_void || op.porosity_use_density)
     error("Option error: porosity material needs to be defined or porosity needs to be turned off")
 end
 %Data gen options

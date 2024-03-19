@@ -25,6 +25,7 @@ op_output.animate = 0;
 
 op.porosity = 1; %[%]
 op.porosity_range = [0 5];
+op.porosity_damping_tuner = 1;
 %Dists
 op.porosity_dist_sigma_tuner = 1;
 op.porosity_dist_mu_tuner = 1; %0.5-1.5
@@ -38,7 +39,7 @@ op.porosity_plot_dists = 0;
 
 %Define input parameters
 op.params = [];
-% op.params = [5 0];
+op.params = [5 1 0];
 
 %% DATA GEN
 

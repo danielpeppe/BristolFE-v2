@@ -27,10 +27,6 @@ matls_for_pores_arr = fn_matl_i(matls, op.porosity_matls_for_pores);
 
 if op.porosity_use_void
     fprintf(" using voids\n")
-elseif op.porosity_use_air
-    %TODO
-elseif op.porosity_use_damping
-    %TODO
 elseif op.porosity_use_density
 
     %Print important info
@@ -58,7 +54,7 @@ elseif op.porosity_use_density
             %Define density in terms of radius of pore
             mat.(pore_mat_field).rho = matls(ply_mat_i).rho * pore_mat_scale_factor;
             %Define stiffness as proportional to drop in density (to preserve impedance)
-            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / pore_mat_scale_factor;
+            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / pore_mat_scale_factor * op.porosity_damping_tuner;
             mat.(pore_mat_field).D = matls(ply_mat_i).D * pore_mat_scale_factor;
             mat.(pore_mat_field).col = hsv2rgb([1, col_sat_arr(i), col_brightness_arr(ii)]); %just make sure colours are distinct, strange calculation here
             mat.(pore_mat_field).el_typ = 'CPE3';
@@ -95,8 +91,6 @@ end
 if op.porosity_use_void
     total_n_pores = round(n_ply_els * (ply_rho - true_porous_ply_rho)/ply_rho);
     n_ply_els = n_ply_els - total_n_pores;
-elseif op.porosity_use_damping
-    %TODO
 elseif op.porosity_use_density
     pore_r_rand = random(pore_r_trunc_pd, n_ply_els, 1); %number of pores cannot exceed n_ply_els
     %DOESNT CONSIDER DIFFERENT PLY MATERIALS
@@ -188,11 +182,7 @@ else
     end
 
     %Assign pore materials
-    if op.porosity_use_air
-        %TODO
-    elseif op.porosity_use_damping
-        %TODO
-    elseif op.porosity_use_density
+    if op.porosity_use_density
         for i = 1:length(pore_el_i_valid)
             %Extract pore matl and distribution
             pore_rho = pore_rho_arr(i);
