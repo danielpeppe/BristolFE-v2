@@ -25,7 +25,7 @@ op_output.animate = 0;
 
 op.porosity = 1; %[%]
 op.porosity_range = [0 5];
-op.porosity_damping_tuner = 1;
+op.porosity_damping_tuner = 2;
 %Dists
 op.porosity_dist_sigma_tuner = 1;
 op.porosity_dist_mu_tuner = 1; %0.5-1.5
@@ -43,55 +43,80 @@ op.params = [5 1 0];
 
 %% DATA GEN
 
-op.data_gen = 0;
-op.data_gen_batch_size = 0;
+op.data_gen = 1;
+op.data_gen_batch_size = 1;
+op.data_gen_load = 0;
 %[name, variation type, perc variation (95% of values sit val% between default op value)
 small_var = 0.01;
 med_var = 0.05;
 large_var = 0.1;
-% op.data_gen_vars = {
-%                     {"specimen_size", "norm", small_var}
-%                     {"ply0_rho_multiplier", "norm", med_var}
-%                     {"ply90_rho_multiplier", "norm", med_var}
-%                     {"ply90_D_multiplier", "norm", med_var}
-%                     {"ply0_D_multiplier", "norm", med_var}
-%                     {"rayleigh_quality_factor", "norm", large_var}
-%                     {"interply_rho_multiplier", "norm", med_var}
-%                     {"interply_D_multiplier", "norm", med_var}
-%                     % {"water_rho_multiplier", "norm", large_var}
-%                     % {"water_D_multiplier", "norm", large_var}
-%                     {"porosity", "lin", op.porosity_range}
-%                     {"porosity_r_sigma_tuner", "lin", [0.5 1.5]}
-%                     {"porosity_dist_mu_tuner", "lin", [0.5 1.5]}
-%                     {"porosity_dist_sigma_tuner", "lin", [0.5 1.5]}
-%                    };
+op.data_gen_vars = {
+                    {"specimen_size", "norm", small_var}
+                    {"ply0_rho_multiplier", "norm", med_var}
+                    {"ply90_rho_multiplier", "norm", med_var}
+                    {"ply90_D_multiplier", "norm", med_var}
+                    {"ply0_D_multiplier", "norm", med_var}
+                    {"rayleigh_quality_factor", "norm", large_var}
+                    {"interply_rho_multiplier", "norm", med_var}
+                    {"interply_D_multiplier", "norm", med_var}
+                    % {"water_rho_multiplier", "norm", large_var}
+                    % {"water_D_multiplier", "norm", large_var}
+                    {"porosity", "lin", op.porosity_range}
+                    {"porosity_r_sigma_tuner", "lin", [0.5 1.5]}
+                    {"porosity_dist_mu_tuner", "lin", [0.5 1.5]}
+                    {"porosity_dist_sigma_tuner", "lin", [0.5 1.5]}
+                   };
 
 %% RUNNING SIM
 
 %Iterate sim for number of parameters
-if op.data_gen
-    [op, op_output, default_op] = fn_set_options(op, op_output);
-    n = op.data_gen_batch_size;
+if op.data_gen_load
+    load('test_signals.mat', 'res', 'steps', 'op_save')
+    %Plot signal
+    fn_plot_porosity_signal(op_save, res, steps, exp_data)
+elseif op.data_gen
+    %Set default options
+    [op, op_output, default_op] = fn_set_options(op);
+
+    %Initialise variables
+    n = op.data_gen_batch_size + 1;
     res = cell(1, n);
     steps = cell(1, n);
-    fprintf("--------------------------- RUNNNING BATCH OF SIMS -----------------------------------\n")
-    for i = 1:n
+    op_save = cell(1, n);
+    
+    %Run default sim with no porosity
+    fprintf("----------------------------- No 1/%d (no porosity) ------------------------------------\n", n)
+    op.porosity = 0;
+    fn_print_default_options(op, default_op);
+    op_save{1,1} = op;
+    fprintf("---------------------------------------------------------------------------------------\n")
+    [res{1,1}, steps{1,1}] = run_sim(op, op_output);
+
+    %Run Batch
+    fprintf("--------------------------- RUNNNING BATCH OF SIMS ------------------------------------\n")
+    for i = 2:n
         fprintf("----------------------------------- No %d/%d ------------------------------------------\n", i, n)
         op = fn_prep_data_gen(op);
         fn_print_default_options(op, default_op);
+        op_save{1,i} = op;
         fprintf("---------------------------------------------------------------------------------------\n")
         %Generate data
         [res{1,i}, steps{1,i}] = run_sim(op, op_output);
         
         %Save data
-        %if op.batch_check, then save geometries
-        figure;
-        plot(steps{1,i}{1}.load.time, sum(res{1,i}{1}.dsps));
-        xlabel("Time (s)")
-        ylabel("Magnitude (-)")
+        %if op.data_check, then save geometries
+        % figure;
+        % plot(steps{1,i}{1}.load.time, sum(res{1,i}{1}.dsps));
+        % xlabel("Time (s)")
+        % ylabel("Magnitude (-)")
     
         %TODO: Check Batch
     end
+    %Save data
+    save('test_signals.mat', 'res', 'steps', 'op_save')
+    %Plot signal
+    fn_plot_porosity_signal(op_save, res, steps, exp_data)
+
 elseif isempty(op.params)
     fprintf("--------------------------- RUNNNING ONE SIM -----------------------------------\n")
     [op, op_output] = fn_set_options(op, op_output);

@@ -91,8 +91,8 @@ default_op.plot_scale_time = 1;
 %Testing horizontal speed
 default_op.test_horizontal_speed = 0;
 %Porosity
-default_op.porosity = 1;
-default_op.porosity_matls_for_pores = ["ply0"];
+default_op.porosity = 0;
+default_op.porosity_matls_for_pores = ["ply0" "ply90"]; %only ply materials supported (due to n_pores calculation)
 %   Spatial
 default_op.porosity_dist_sigma_tuner = 1;
 default_op.porosity_dist_mu_tuner = 1; %0.5-1.5
@@ -115,6 +115,7 @@ default_op.data_gen = 0;
 default_op.data_gen_batch_size = 0;
 default_op.data_gen_vars = {};
 default_op.porosity_range = [0 5];
+default_op.data_gen_load = 0;
 
 %% SET DEFAULT OPTIONS
 

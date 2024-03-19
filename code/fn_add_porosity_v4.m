@@ -42,7 +42,7 @@ elseif op.porosity_use_density
 
     %Loop over pore types
     col_sat_arr = linspace(0.25, 1, op.porosity_n_pore_matls);
-    col_brightness_arr = linspace(0.5, 1, numel(op.porosity_matls_for_pores));
+    col_brightness_arr = linspace(0.5, 0.7, numel(op.porosity_matls_for_pores));
     pore_r_arr = linspace(porosity_r_min, porosity_r_max, op.porosity_n_pore_matls);
     mat = struct();
     for i = 1:op.porosity_n_pore_matls
@@ -93,7 +93,7 @@ if op.porosity_use_void
     n_ply_els = n_ply_els - total_n_pores;
 elseif op.porosity_use_density
     pore_r_rand = random(pore_r_trunc_pd, n_ply_els, 1); %number of pores cannot exceed n_ply_els
-    %DOESNT CONSIDER DIFFERENT PLY MATERIALS
+    %DOESNT CONSIDER DIFFERENT PLY DENSITIES
     el_rho_rand = ply_rho*(1 - pi*sqrt(3)*(((pore_r_rand/2).^2/mod.el_height^2)));
     total_n_pores = 0;
     porous_ply_rho = ply_rho;
@@ -148,7 +148,8 @@ while ismember(pore_el_i_valid, 0)
     if sum(pore_el_matl_i_is_pore_matl) > total_n_pores
         %Set ply elements to pore materials
         pore_el_i_valid = pore_el_i_arr_un(pore_el_matl_i_is_pore_matl);
-        pore_el_i_valid = pore_el_i_valid(1:total_n_pores);
+        shuffle_indices = randperm(numel(pore_el_i_valid), total_n_pores);
+        pore_el_i_valid = pore_el_i_valid(shuffle_indices);
     else
         %Reset valid element indices
         pore_el_i_valid = zeros(total_n_pores, 1);
