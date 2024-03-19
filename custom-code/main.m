@@ -1,11 +1,11 @@
 clear;
 close all;
 % restoredefaultpath;
-addpath('../code');
+addpath("../code");
 
 %% LOAD EXPERIMENTAL DATA
 
-load('g4-s8_x-8000_z0_025.mat','exp_data');
+load("g4-s8_x-8000_z0_025.mat","exp_data");
 
 %% DEFINE OUTPUT
 
@@ -13,7 +13,7 @@ load('g4-s8_x-8000_z0_025.mat','exp_data');
 anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
 %Output for each sim
-op_output.justgeometry = 0; %disables other outputs
+op_output.justgeometry = 1; %disables other outputs
 op_output.geometry = 1;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 0;
@@ -32,47 +32,38 @@ op.porosity_dist_mu_tuner = 1; %0.5-1.5
 op.porosity_use_density = 1;
 op.porosity_r_sigma_tuner = 1;
 %Output
-op.porosity_plot_dists = 1;
+op.porosity_plot_dists = 0;
 
 %% PARAMS
 
 %Define input parameters
 op.params = [];
-% op.params = [1 0];
-% op.params = [10 12 15]; %els_per_wavelength
-% op.params = [inf 0.1 0.5 1 5]; %damping
-% op.params = {'resin','resin';'ply90','ply0'}; %intraply layers
-% op.params = {[1,1],[1,2],[1,3],[2,1],[2,2],[2,3],[3,1],[3,2],[3,3]};
-% op.params = {[0,90],[0,-90]};
-% op.params = [0 1];
-% op.params = [0.1 0.5 1 1.5 2.5];
-% op.params = [1 0.1 0];
-op.params = [5 1 0];
+% op.params = [5 0];
 
 %% DATA GEN
 
 op.data_gen = 0;
-op.data_gen_batch_size = 2;
+op.data_gen_batch_size = 0;
 %[name, variation type, perc variation (95% of values sit val% between default op value)
 small_var = 0.01;
 med_var = 0.05;
 large_var = 0.1;
-op.data_gen_vars = {
-                    {'specimen_size', 'norm', small_var}
-                    {'ply0_rho_multiplier', 'norm', med_var}
-                    {'ply90_rho_multiplier', 'norm', med_var}
-                    {'ply90_D_multiplier', 'norm', med_var}
-                    {'ply0_D_multiplier', 'norm', med_var}
-                    {'rayleigh_quality_factor', 'norm', large_var}
-                    {'interply_rho_multiplier', 'norm', med_var}
-                    {'interply_D_multiplier', 'norm', med_var}
-                    % {'water_rho_multiplier', 'norm', large_var}
-                    % {'water_D_multiplier', 'norm', large_var}
-                    {'porosity', 'lin', op.porosity_range}
-                    {'porosity_r_sigma_tuner', 'lin', [0.5 1.5]}
-                    {'porosity_dist_mu_tuner', 'lin', [0.5 1.5]}
-                    {'porosity_dist_sigma_tuner', 'lin', [0.5 1.5]}
-                   };
+% op.data_gen_vars = {
+%                     {"specimen_size", "norm", small_var}
+%                     {"ply0_rho_multiplier", "norm", med_var}
+%                     {"ply90_rho_multiplier", "norm", med_var}
+%                     {"ply90_D_multiplier", "norm", med_var}
+%                     {"ply0_D_multiplier", "norm", med_var}
+%                     {"rayleigh_quality_factor", "norm", large_var}
+%                     {"interply_rho_multiplier", "norm", med_var}
+%                     {"interply_D_multiplier", "norm", med_var}
+%                     % {"water_rho_multiplier", "norm", large_var}
+%                     % {"water_D_multiplier", "norm", large_var}
+%                     {"porosity", "lin", op.porosity_range}
+%                     {"porosity_r_sigma_tuner", "lin", [0.5 1.5]}
+%                     {"porosity_dist_mu_tuner", "lin", [0.5 1.5]}
+%                     {"porosity_dist_sigma_tuner", "lin", [0.5 1.5]}
+%                    };
 
 %% RUNNING SIM
 
@@ -95,8 +86,8 @@ if op.data_gen
         %if op.batch_check, then save geometries
         figure;
         plot(steps{1,i}{1}.load.time, sum(res{1,i}{1}.dsps));
-        xlabel('Time (s)')
-        ylabel('Magnitude (-)')
+        xlabel("Time (s)")
+        ylabel("Magnitude (-)")
     
         %TODO: Check Batch
     end

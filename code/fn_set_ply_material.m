@@ -105,7 +105,7 @@ if ~upper_water_present
                                           1 1
                                          -1 1]; %NB: y-coords have safety margin here
     [in, ~] = fn_elements_in_region(mod, bdry_pts);
-    if find(mod.el_mat_i(in,:) == fn_matl_i(matls,'water'))
+    if find(mod.el_mat_i(in,:) == fn_matl_i(matls,"water"))
         error('Upper water layer present in model, even though op.upper_water_present = 0')
     end
 end
@@ -117,9 +117,7 @@ model_specimen_height = height_completed - sbp(1,2);
 model_accuracy = round(100*model_specimen_height/specimen_height, 2);
 fprintf("Specimen model accuracy: %.2f%%\n", model_accuracy)
 if abs(100 - model_accuracy) > 5
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-    disp('CAUTION: Specimen model accuracy is less than 95%')
-    disp('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    warning('Specimen model accuracy is less than 95%')
 end
 %Caluculate percentage of model made up of interply boundaries if enabled
 if interply_boundary
@@ -141,8 +139,8 @@ if interply_boundary
             norm(matls(interply_layer2_i).D)/norm(matls(layer2_i).D)]);
     %Print results
     interply_perc = round(100*interply_els/total_els,2);
-    fprintf("Interply elements: Proportion:       %.2f%%\n", interply_perc)
-    fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*interply_perc)
+    fprintf("Interply elements: Proportion: %.2f%%\n", interply_perc)
+    fprintf("                   Density impact: %.2f%%\n", (rho_impact - 1)*interply_perc)
     fprintf("                   Stiffness impact: ~%.2f%%\n", (D_impact - 1)*interply_perc) %stiffness impact is approximate
 end
 

@@ -29,9 +29,7 @@ for ii=1:length(new_struct_fieldnames)
                 fprintf('op.%s: %s (default: %s)\n', new_struct_fieldnames{ii}, new_struct_value, default_value);
             end
         elseif iscell(new_struct_value)
-            if isempty(new_struct_value)
-                fprintf('op.%s: default values set\n', new_struct_fieldnames{ii});
-            else
+            if ~isempty(new_struct_value)
                 fprintf('op.%s: custom values set\n', new_struct_fieldnames{ii});
             end
         else

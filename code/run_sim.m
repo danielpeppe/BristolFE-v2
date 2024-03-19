@@ -146,18 +146,18 @@ mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 %% SET MATERIALS IN MESH
 
 %First set all elements to water
-mod.el_mat_i(:) = fn_matl_i(matls,'water');
+mod.el_mat_i(:) = fn_matl_i(matls,"water");
 %Set upper elements to solid water if enabled
 if op.solidwater
     solidwater_bdry = [0,            model_height/2
                        model_width,  model_height/2
                        model_width,  model_height
                        0,            model_height];
-    mod = fn_set_els_inside_bdry_to_mat(mod, solidwater_bdry, fn_matl_i(matls,'solidwater'));
+    mod = fn_set_els_inside_bdry_to_mat(mod, solidwater_bdry, fn_matl_i(matls,"solidwater"));
 end
 %Set specimen materials
 if op.solid_specimen
-    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls,'ply90'));
+    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls,"ply90"));
 elseif op.composite_specimen
     if op.upper_water_present
         [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
@@ -196,7 +196,7 @@ else
 end
 
 %Define src end points
-if strcmpi(op.src_matl,'solid_horizontal')
+if strcmpi(op.src_matl,"solid_horizontal")
     src_end_pts = [
         0, 0.25 * model_height
         0, 0.75 * model_height];

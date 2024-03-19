@@ -21,6 +21,7 @@ layer1_i = comp.matl_i.layer1_i;
 layer2_i = comp.matl_i.layer2_i;
 interply_layer_i = comp.matl_i.interply_layer1_i;
 ply_width = comp.specimen_width;
+matls_for_pores_arr = fn_matl_i(matls, op.porosity_matls_for_pores);
 
 %% DEFINE PORE MATERIALS
 
@@ -45,17 +46,20 @@ elseif op.porosity_use_density
 
     %Loop over pore types
     col_sat_arr = linspace(0.25, 1, op.porosity_n_pore_matls);
-    col_brightness_arr = linspace(0.5, 1, numel(op.porosity_ply_matls));
+    col_brightness_arr = linspace(0.5, 1, numel(op.porosity_matls_for_pores));
     pore_r_arr = linspace(porosity_r_min, porosity_r_max, op.porosity_n_pore_matls);
     mat = struct();
     for i = 1:op.porosity_n_pore_matls
         %Loop over materials which will contrain porosity
-        for ii = 1:length(op.porosity_ply_matls)
-            ply_mat_i = fn_matl_i(matls, op.porosity_ply_matls(ii));
-            pore_mat_field = strcat(op.porosity_ply_matls(ii),"_pore",string(i));
+        for ii = 1:length(op.porosity_matls_for_pores)
+            ply_mat_i = fn_matl_i(matls, op.porosity_matls_for_pores(ii));
+            pore_mat_field = strcat(op.porosity_matls_for_pores(ii),"_pore",string(i));
+            pore_mat_scale_factor = 1 - pi*sqrt(3)*((pore_r_arr(i)^2/mod.el_height^2));
             %Define density in terms of radius of pore
-            mat.(pore_mat_field).rho = matls(ply_mat_i).rho*(1 - pi*sqrt(3)*((pore_r_arr(i)^2/mod.el_height^2)));
-            mat.(pore_mat_field).D = matls(ply_mat_i).D;
+            mat.(pore_mat_field).rho = matls(ply_mat_i).rho * pore_mat_scale_factor;
+            %Define stiffness as proportional to drop in density (to preserve impedance)
+            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / pore_mat_scale_factor;
+            mat.(pore_mat_field).D = matls(ply_mat_i).D * pore_mat_scale_factor;
             mat.(pore_mat_field).col = hsv2rgb([1, col_sat_arr(i), col_brightness_arr(ii)]); %just make sure colours are distinct, strange calculation here
             mat.(pore_mat_field).el_typ = 'CPE3';
         end
@@ -130,7 +134,7 @@ pore_dist_trunc_pd = truncate(pore_dist_pd, lower_layer, upper_layer);
 % locations (in resin)
 n_samples = round(total_n_pores * op.porosity_dist_n_samples_sf);
 pore_el_i_valid = zeros(total_n_pores, 1);
-while ismember(0, pore_el_i_valid)
+while ismember(pore_el_i_valid, 0)
 
     %Get location where 'porous element' will be locates
     rand_height_arr = random(pore_dist_trunc_pd, n_samples, 1);
@@ -146,14 +150,15 @@ while ismember(0, pore_el_i_valid)
     pore_el_i_arr_un = unique(pore_el_i_arr);
     %Get chosen pore element materials
     pore_el_matl_i = mod.el_mat_i(pore_el_i_arr_un);
-    pore_el_matl_i_is_ply = (pore_el_matl_i == layer1_i | pore_el_matl_i == layer2_i);
-    if sum(pore_el_matl_i_is_ply) > total_n_pores
+    pore_el_matl_i_is_pore_matl = ismember(pore_el_matl_i, matls_for_pores_arr);
+    if sum(pore_el_matl_i_is_pore_matl) > total_n_pores
         %Set ply elements to pore materials
-        pore_el_i_valid = pore_el_i_arr_un(pore_el_matl_i_is_ply);
+        pore_el_i_valid = pore_el_i_arr_un(pore_el_matl_i_is_pore_matl);
         pore_el_i_valid = pore_el_i_valid(1:total_n_pores);
     else
         %Reset valid element indices
         pore_el_i_valid = zeros(total_n_pores, 1);
+        fprintf("trying again...")
     end
 end
 
@@ -168,7 +173,7 @@ if op.porosity_use_void
 else
     %Extract pore materials from matls struct
     matls_names = {matls.name};
-    for ply_mat = op.porosity_ply_matls
+    for ply_mat = op.porosity_matls_for_pores
         ply_mat_c = char(ply_mat);
         ply_mat_i = [ply_mat_c,'_i'];
         pore_matls.(ply_mat_i) = 1;
@@ -202,7 +207,7 @@ else
         end
     end
     %Validate porosity material has been assigned to model elements
-    if ismember(pore_el_i_arr_un, mod.el_mat_i)
+    if ismember(mod.el_mat_i, pore_el_i_arr_un)
         error('Porosity has not been added to model for some reason')
     end
 end
@@ -230,6 +235,7 @@ if op.porosity_plot_dists
     title('Actual Pore Spatial Distribution');
 end
 
+fprintf("...completed\n")
 
 end
 

@@ -6,7 +6,6 @@ function [matls, R_coefs] = fn_get_matls_struct(op, mat, varargin)
 if isempty(varargin)
     matls = struct();
     n_matls_old = 0;
-    
     %Check composite layers are defined materials
     if ~isfield(mat, op.layer1) || ~isfield(mat, op.layer2) ||...
             ~isfield(mat, op.interply_layer1) || ~isfield(mat, op.interply_layer2)
@@ -30,8 +29,8 @@ for i = 1:n_matls
     %Check fields are named correctly
     if ~isfield(matls,'rho') || ~isfield(matls,'D') || ~isfield(matls,'name') ||...
         ~isfield(matls,'rayleigh_coefs') || ~isfield(matls,'col') || ~isfield(matls,'el_typ')
-    warning('OFF', 'BACKTRACE');
-    warning('Unknown material field (not rho, D, rayleigh_coefs, col, or el_typ)')
+        warning('OFF', 'BACKTRACE');
+        warning('Unknown material field (not rho, D, rayleigh_coefs, col, or el_typ)')
     end
         
     % %Scale values according to scale of model
