@@ -1,6 +1,12 @@
-function [op, op_output] = fn_set_options(op, op_output)
+function varargout = fn_set_options(op, varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+
+if ~isempty(varargin)
+    op_output = varargin{1};
+else
+    op_output = struct();
+end
 
 %Model
 default_op.abs_bdry_thickness_perc = 0.2;
@@ -58,11 +64,6 @@ default_op.interply_first_layer = 1;
 default_op.interply_last_layer = 0;
 default_op.interply_rho_multiplier = 1;
 default_op.interply_D_multiplier = 1;
-
-default_op.ply0b_interply_rho_multiplier = 1;
-default_op.ply0b_interply_D_multiplier = 1;
-default_op.ply90b_interply_rho_multiplier = 1;
-default_op.ply90b_interply_D_multiplier = 1;
 %   v2 - Intraply boundary options
 default_op.intraply_boundary = 0;
 default_op.intraply_layer1 = 'resin_intra';
@@ -90,27 +91,32 @@ default_op.plot_scale_time = 1;
 %Testing horizontal speed
 default_op.test_horizontal_speed = 0;
 %Porosity
-default_op.porosity = 0;
-default_op.porosity_dist_sigma_tuner = 1.5;
+default_op.porosity = 1;
+default_op.porosity_range = [0 5];
+default_op.porosity_dist_sigma_tuner = 1;
 default_op.porosity_dist_mu_tuner = 1; %0.5-1.5
 default_op.porosity_dist_n_samples_sf = 1.5;
-default_op.porosity_sigma_tuner = 1;
-default_op.porosity_mu_tuner = 1;
+default_op.porosity_r_sigma_tuner = 1;
 default_op.porosity_n_pore_matls = 100;
 default_op.porosity_r_min = 1e-6; %[m]
-default_op.porosity_r_max = 2e-6;
-default_op.porosity_r_max_multiplier = 1;
+default_op.porosity_r_max = 5e-6;
 default_op.porosity_ply_matls = ["ply0","ply90"];
 default_op.porosity_plot_dists = 0;
 %Porosity Material
 default_op.porosity_use_void = 0;
 default_op.porosity_use_air = 0;
-default_op.porosity_use_density = 0;
+default_op.porosity_use_density = 1;
 default_op.porosity_use_damping = 0;
+%Data generation options
+default_op.data_gen = 1;
+default_op.data_gen_batch_size = 0;
+default_op.data_gen_vars = {};
+
 
 %% SET DEFAULT OPTIONS
 
-op = fn_set_default_fields(op, default_op, true); %true to print non-default options
+fn_print_default_options(op, default_op)
+op = fn_set_default_fields(op, default_op);
 
 %% VALIDATE INPUT
 
@@ -169,15 +175,19 @@ else
     error('Option error: set op.src_matl to water, solid, or solid_horizontal')
 end
 %Porosity options
+if ischar(op.porosity_ply_matls)
+    error('Option error: op.porosity_ply_matls has to be a list of strings (not chars)')
+end
 if  op.porosity_use_void + op.porosity_use_air + op.porosity_use_density + op.porosity_use_damping > 1
     error('Option error: chose only 1 porosity_use material')
 end
-if  ~op.porosity_n_pore_matls && (op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
+if  ~(op.porosity_n_pore_matls || op.porosity) && (op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
     error('Option error: number of pore materials is set to 0, not porosity_use materials have been set')
 end
-if op.porosity && ~(op.porosity_use_void || op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
-    error('Option error: porosity is enabled, but material has not been defined')
+if op.porosity == 1 && ~(op.porosity_use_void || op.porosity_use_air || op.porosity_use_density || op.porosity_use_damping)
+    error('Option error: porosity material needs to be defined or porosity needs to be turned off')
 end
+
 
 %% TESTING HORIZONTAL SPEED
 
@@ -195,9 +205,17 @@ end
 
 %% VALIDATE OUTPUT
 
-if isempty(op.params)
+if isempty(fieldnames(op_output))
+    %Disable output
+    op_output.justgeometry = 0;
+    op_output.geometry = 0;
+    op_output.run_fea = 1;
+    op_output.plot_sim_data = 0;
+    op_output.plot_exp_data = 0;
+    op_output.animate = 0;
+elseif isempty(op.params)
     op_output.plot_sim_data = 1;
-    op_output.plot_exp_data = 1;
+    op_output.plot_exp_data = 0;
 else
     op_output.justgeometry = 0;
     op_output.animate = 0;
@@ -211,6 +229,12 @@ end
 if op_output.animate
     fprintf("Output option enabled: ANIMATE\n")
 end
+
+%% RETURN VARARGOUT
+
+varargout{1} = op;
+varargout{2} = op_output;
+varargout{3} = default_op;
 
 end
 
