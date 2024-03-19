@@ -1,4 +1,4 @@
-function [mod, matls] = fn_add_porosity_v4(op, mod, matls, comp)
+function [mod, matls] = fn_add_porosity_v4(mod, op, matls, comp)
 %FN_GEN_VOID Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -31,16 +31,18 @@ elseif op.porosity_use_air
 elseif op.porosity_use_damping
     %TODO
 elseif op.porosity_use_density
+
     %Print important info
     porosity_r_absolute_max = sqrt(mod.el_height^2/(sqrt(3)*pi));
     if porosity_r_max > porosity_r_absolute_max
-        error('porosity_r_max is too high. Decrease element size safety factor, or decrease porosity_r_max')
+        error('porosity_r_max is too high. Decrease porosity_r_max.')
     end
     porosity_r_range = [porosity_r_min, porosity_r_max, porosity_r_absolute_max] * 1e6;
     fprintf("\n")
     fprintf("using density: rad range: [%.2f, %.2f] (max: %.2f)\n", porosity_r_range)
     fprintf("               el_height: %.2f\n", mod.el_height * 1e6)
     fprintf("               max rho reduction: %.2f times\n", 1/(1 - pi*sqrt(3)*((porosity_r_max^2/mod.el_height^2))))
+
     %Loop over pore types
     col_sat_arr = linspace(0.25, 1, op.porosity_n_pore_matls);
     col_brightness_arr = linspace(0.5, 1, numel(op.porosity_ply_matls));
@@ -64,11 +66,10 @@ end
 
 %% NUMBER OF PORES
 
-%Pore radius distribution
-% mu1 = 11.1e-6; %[m] %DIAMETER
-% sigma1 = 13.68e-6; %DIAMETER
-mu1 = (porosity_r_max + porosity_r_min)/2 * op.porosity_mu_tuner;
-sigma1 = (porosity_r_max - porosity_r_min)/4 * op.porosity_sigma_tuner;
+%Pore radius is linearly proportional to level of porosity within range
+porosity_range = op.porosity_range(2) - op.porosity_range(1);
+mu1 = porosity_r_min + (porosity_r_max - porosity_r_min) * (op.porosity/porosity_range);
+sigma1 = (porosity_r_max - porosity_r_min)/4 * op.porosity_r_sigma_tuner;
 pore_r_pd = makedist('Normal', 'mu', mu1, 'sigma', sigma1);
 % Truncate the normal distribution
 pore_r_trunc_pd = truncate(pore_r_pd, porosity_r_min, porosity_r_max);
@@ -115,7 +116,7 @@ end
 
 %Create ply layer probability distribution
 upper_layer = comp.ply_location_tracker{1, 1};
-lower_layer = comp.ply_location_tracker{op.n_ply_layers, 1};
+lower_layer = comp.ply_location_tracker{op.n_ply_layers, 2};
 mu2 = (upper_layer + lower_layer)/2 * op.porosity_dist_mu_tuner; % You can set your desired mean, here it's set to the midpoint
 sigma2 = (upper_layer - lower_layer)/4 * op.porosity_dist_sigma_tuner; % Standard deviation; adjust as needed
 pore_dist_pd = makedist('Normal', 'mu', mu2, 'sigma', sigma2);
