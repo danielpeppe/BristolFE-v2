@@ -1,4 +1,4 @@
-function fn_plot_porosity_signal(op_save, res, steps, exp_data)
+function op_save = fn_check_porosity_data(op_save, res, steps, exp_data)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -21,9 +21,9 @@ for i = 1:length(res)
     res_norm = res_sum/max(abs(res_sum)); %Scale exp response to match sim response
     %Plot final results
     n_pts_half = round(length(res_norm)/2);
-    attenuation = max(res_norm(n_pts_half:end))/max(res_no_porosity_norm(n_pts_half:end));
+    op_save{1,i}.attenuation = 1 - max(res_norm(n_pts_half:end))/max(res_no_porosity_norm(n_pts_half:end));
 
-    str = strcat(string(op_save{1,i}.porosity), ", ", string(attenuation));
+    str = strcat(string(op_save{1,i}.porosity), ", ", string(op_save{1,i}.attenuation));
     plot(time, res_norm, 'DisplayName', str);
     hold on
 end
