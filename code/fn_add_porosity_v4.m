@@ -54,7 +54,7 @@ elseif op.porosity_use_density
             %Define density in terms of radius of pore
             mat.(pore_mat_field).rho = matls(ply_mat_i).rho * pore_mat_scale_factor;
             %Define stiffness as proportional to drop in density (to preserve impedance)
-            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / pore_mat_scale_factor * op.porosity_damping_tuner;
+            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / (pore_mat_scale_factor * op.porosity_damping_tuner);
             mat.(pore_mat_field).D = matls(ply_mat_i).D * pore_mat_scale_factor;
             mat.(pore_mat_field).col = hsv2rgb([1, col_sat_arr(i), col_brightness_arr(ii)]); %just make sure colours are distinct, strange calculation here
             mat.(pore_mat_field).el_typ = 'CPE3';
