@@ -35,10 +35,10 @@ elseif op.porosity_use_density
         error('porosity_r_max is too high. Decrease porosity_r_max.')
     end
     porosity_r_range = [porosity_r_min, porosity_r_max, porosity_r_absolute_max] * 1e6;
-    fprintf("\n")
-    fprintf("using density: rad range: [%.2f, %.2f] (max: %.2f)\n", porosity_r_range)
-    fprintf("               el_height: %.2f\n", mod.el_height * 1e6)
-    fprintf("               max rho reduction: %.2f times\n", 1/(1 - pi*sqrt(3)*((porosity_r_max^2/mod.el_height^2))))
+    % fprintf("\n")
+    % fprintf("using density: rad range: [%.2f, %.2f] (max: %.2f)\n", porosity_r_range)
+    % fprintf("               el_height: %.2f\n", mod.el_height * 1e6)
+    % fprintf("               max rho reduction: %.2f times\n", 1/(1 - pi*sqrt(3)*((porosity_r_max^2/mod.el_height^2))))
 
     %Loop over pore types
     col_sat_arr = linspace(0.25, 1, op.porosity_n_pore_matls);
@@ -50,12 +50,16 @@ elseif op.porosity_use_density
         for ii = 1:length(op.porosity_matls_for_pores)
             ply_mat_i = fn_matl_i(matls, op.porosity_matls_for_pores(ii));
             pore_mat_field = strcat(op.porosity_matls_for_pores(ii),"_pore",string(i));
-            pore_mat_scale_factor = 1 - pi*sqrt(3)*((pore_r_arr(i)^2/mod.el_height^2));
-            %Define density in terms of radius of pore
-            mat.(pore_mat_field).rho = matls(ply_mat_i).rho * pore_mat_scale_factor;
+            %Define scale factor in terms of radius of pore
+            scale_factor = 1 - pi*sqrt(3)*((pore_r_arr(i)^2/mod.el_height^2));
+            %Define density
+            mat.(pore_mat_field).rho = matls(ply_mat_i).rho * scale_factor;
+            % mat.(pore_mat_field).rho = matls(ply_mat_i).rho;
             %Define stiffness as proportional to drop in density (to preserve impedance)
-            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / (pore_mat_scale_factor * op.porosity_damping_tuner);
-            mat.(pore_mat_field).D = matls(ply_mat_i).D * pore_mat_scale_factor;
+            mat.(pore_mat_field).D = matls(ply_mat_i).D * scale_factor;
+            % mat.(pore_mat_field).D = matls(ply_mat_i).D;
+            %Define everything else
+            mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / scale_factor * op.porosity_damping_tuner ;
             mat.(pore_mat_field).col = hsv2rgb([1, col_sat_arr(i), col_brightness_arr(ii)]); %just make sure colours are distinct, strange calculation here
             mat.(pore_mat_field).el_typ = 'CPE3';
         end
@@ -92,11 +96,13 @@ if op.porosity_use_void
     total_n_pores = round(n_ply_els * (ply_rho - true_porous_ply_rho)/ply_rho);
     n_ply_els = n_ply_els - total_n_pores;
 elseif op.porosity_use_density
+    %Generate random pore radii
     pore_r_rand = random(pore_r_trunc_pd, n_ply_els, 1); %number of pores cannot exceed n_ply_els
-    %DOESNT CONSIDER DIFFERENT PLY DENSITIES
-    el_rho_rand = ply_rho*(1 - pi*sqrt(3)*(((pore_r_rand/2).^2/mod.el_height^2)));
+    %Convert into densities
+    el_rho_rand = ply_rho*(1 - pi*sqrt(3)*(((pore_r_rand/2).^2/mod.el_height^2))); %THIS DOESNT CONSIDER DIFFERENT PLY DENSITIES
     total_n_pores = 0;
     porous_ply_rho = ply_rho;
+    %Generate list of random pore element densities to assign later and count number of pores required
     while porous_ply_rho > true_porous_ply_rho
         total_n_pores = total_n_pores + 1;
         pore_rho = el_rho_rand(total_n_pores);
@@ -107,7 +113,8 @@ elseif op.porosity_use_density
 
     %Print true porosity
     comp.porosity_rho = comp.interply_volume_frac*resin_rho + comp.ply_volume_frac*porous_ply_rho;
-    fprintf('               Modelled Porosity: %.2f%% w/ %d Pores (target: %.2f%%)\n', 100*(1 - comp.porosity_rho/comp.pristine_rho), total_n_pores, 100*porosity)
+    actual_porosity = 100*(1 - comp.porosity_rho/comp.pristine_rho);
+    fprintf('               Actual Porosity: %.2f%% w/ %d Pores (target: %.2f%%)\n', actual_porosity, total_n_pores, 100*porosity)
 end
 
 %% PORE SPATIAL DISTRIBUTION

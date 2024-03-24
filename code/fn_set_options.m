@@ -107,14 +107,14 @@ default_op.porosity_use_void = 0;
 %   Density
 default_op.porosity_use_density = 1;
 %   Damping
-default_op.porosity_damping_tuner = 1;
+default_op.porosity_damping_tuner = 3.2;
 %   Output
 default_op.porosity_plot_dists = 0;
 %Data generation options
 default_op.data_gen = 0;
 default_op.data_gen_batch_size = 0;
 default_op.data_gen_vars = {};
-default_op.porosity_range = [0 5];
+default_op.porosity_range = [0 3];
 default_op.data_gen_load = 0;
 
 %% SET DEFAULT OPTIONS

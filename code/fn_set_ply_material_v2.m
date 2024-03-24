@@ -193,9 +193,9 @@ if interply_boundary
     comp.interply_volume_frac = interply_els/total_els;
     comp.ply_volume_frac = 1 - comp.interply_volume_frac; %used in porosity function
     interply_volume_frac_disp = round(100*comp.interply_volume_frac,2);
-    fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", interply_volume_frac_disp, interply_el_thickness)
-    fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*interply_volume_frac_disp)
-    fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*interply_volume_frac_disp) %stiffness impact is approximate
+    % fprintf("Interply elements: Proportion:       %.2f%% @ height = %d els\n", interply_volume_frac_disp, interply_el_thickness)
+    % fprintf("                   Density impact:   %.2f%%\n", (rho_impact - 1)*interply_volume_frac_disp)
+    % fprintf("                   Stiffness impact: %.2f%%\n", (D_impact - 1)*interply_volume_frac_disp) %stiffness impact is approximate
 end
 
 %% Put material indices in comp struct

@@ -12,8 +12,6 @@ FntS = 13;
 ax1 = gca;
 
 %Iterate over sim results
-res_no_porosity = sum(res{1,1}{1}.dsps);
-res_no_porosity_norm = res_no_porosity/max(abs(res_no_porosity));
 for i = 1:length(res)
     res_sum = sum(res{1,i}{1}.dsps); %tmp for readability
     time = steps{1,i}{1}.load.time;
@@ -21,8 +19,8 @@ for i = 1:length(res)
     res_norm = res_sum/max(abs(res_sum)); %Scale exp response to match sim response
     %Plot final results
     n_pts_half = round(length(res_norm)/2);
-    op_save{1,i}.attenuation = 1 - max(res_norm(n_pts_half:end))/max(res_no_porosity_norm(n_pts_half:end));
-
+    op_save{1,i}.attenuation = 1/max(res_norm(n_pts_half:end));
+    
     str = strcat(string(op_save{1,i}.porosity), ", ", string(op_save{1,i}.attenuation));
     plot(time, res_norm, 'DisplayName', str);
     hold on

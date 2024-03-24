@@ -104,7 +104,7 @@ abs_bdry_thickness = op.abs_bdry_thickness_perc * op.specimen_size;
 
 %Define size of model
 model_bdry_pts = [
-    0,            0 
+    0,            0
     model_width,  0
     model_width,  model_height
     0,            model_height];
