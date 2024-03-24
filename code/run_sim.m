@@ -131,7 +131,9 @@ abs_bdry_pts = [
 %% DEFINE MESH
 
 %Work out element size (slightly different from actual element size)
-el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
+% el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
+el_size = 1.5261e-05; %OVERRIDE ELEMENT SIZE FOR CONSISTENCY
+op.el_size = el_size; %SAVE ELEMENT SIZE
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 
@@ -221,7 +223,8 @@ steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * op.src_dir;
 %Also provide the time signal for the loading (if this is a vector, it will
 %be applied at all frc_nds/frc_dfs simultaneously; alternatively it can be a matrix
 %of different time signals for each frc_nds/frc_dfs
-time_step = fn_get_suitable_time_step(matls, el_size, op.scale_units, op.time_step_safety_factor);
+% time_step = fn_get_suitable_time_step(matls, el_size, op.scale_units, op.time_step_safety_factor);
+time_step = 4.5002e-10; %OVERRISE TIMESTEP FOR CONSISTENCY
 steps{1}.load.time = 0: time_step:  max_time;
 steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycles);
 
