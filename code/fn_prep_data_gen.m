@@ -22,7 +22,7 @@ for i = 1:length(op.data_gen_vars)
         up_bound = var_val(2);
         low_bound = var_val(1);
         op.(var_name) = low_bound + (up_bound - low_bound) * rand;
-end
+    end
 
 end
 

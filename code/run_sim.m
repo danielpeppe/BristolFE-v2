@@ -1,4 +1,4 @@
-function [res, steps] = run_sim(op, op_output, varargin)
+function [res, steps, op] = run_sim(op, op_output, varargin)
 %% REDEFINE OPTIONS
 
 if ~isempty(varargin)
@@ -169,7 +169,7 @@ end
 
 %Add porosity
 %Doesn't support intRAply layers or 2 types of intERply layers
-[mod, matls] = fn_add_porosity_v4(mod, op, matls, comp);
+[mod, matls, op] = fn_add_porosity_v4(mod, op, matls, comp);
 
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);

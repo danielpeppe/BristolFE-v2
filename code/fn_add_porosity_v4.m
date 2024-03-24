@@ -1,4 +1,4 @@
-function [mod, matls] = fn_add_porosity_v4(mod, op, matls, comp)
+function [mod, matls, op] = fn_add_porosity_v4(mod, op, matls, comp)
 %FN_GEN_VOID Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -209,6 +209,11 @@ else
         error('Porosity has not been added to model for some reason')
     end
 end
+
+%% RETURN POROSITY DATA
+
+op.actual_porosity = actual_porosity;
+op.total_n_pores = total_n_pores;
 
 %% PLOT DISTRIBUTIONS
 

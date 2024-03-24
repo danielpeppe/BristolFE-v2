@@ -1,4 +1,4 @@
-function op_save = fn_check_porosity_data(op_save, res, steps, exp_data)
+function fn_plot_batch(op_save, res, steps, exp_data, save_figure, dir_name)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -6,10 +6,14 @@ function op_save = fn_check_porosity_data(op_save, res, steps, exp_data)
 op = op_save{1};
 
 %Plot Final Results
-figure;
+if save_figure
+    figure_batch_plot = figure('Visible', 'off');
+else
+    figure_batch_plot = figure;
+end
+
 FntN='Times New Roman';
 FntS = 13;
-ax1 = gca;
 
 %Iterate over sim results
 for i = 1:length(res)
@@ -26,20 +30,20 @@ for i = 1:length(res)
     hold on
 end
 
-%Plot experimental data on top
-hold on
-%Get exp time data for aperture (needed for scaling)
-aperture = 1:op.aperture_n_els;
-aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
-aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
-aperture_dsp_data_norm = aperture_dsp_data/max(abs(aperture_dsp_data));
-translate_time = 1.194e-05; %Start of exp response
-%Plot
-exp_time_translated = exp_data.time - translate_time;
-exp_i = find(exp_time_translated > 0 & exp_time_translated < op.max_time);
-correction = 0.75; %exp displacements need to be reduced slightly because exp initial signal need to be smaller than sim's
-plot(exp_time_translated(exp_i), aperture_dsp_data_norm(exp_i) * correction, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
-hold off
+% %Plot experimental data on top
+% hold on
+% %Get exp time data for aperture (needed for scaling)
+% aperture = 1:op.aperture_n_els;
+% aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
+% aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
+% aperture_dsp_data_norm = aperture_dsp_data/max(abs(aperture_dsp_data));
+% translate_time = 1.194e-05; %Start of exp response
+% %Plot
+% exp_time_translated = exp_data.time - translate_time;
+% exp_i = find(exp_time_translated > 0 & exp_time_translated < op.max_time);
+% correction = 0.75; %exp displacements need to be reduced slightly because exp initial signal need to be smaller than sim's
+% plot(exp_time_translated(exp_i), aperture_dsp_data_norm(exp_i) * correction, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
+% hold off
 
 xlabel('Time (s)')
 ylabel('Magnitude (-)')
@@ -53,6 +57,11 @@ set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k'
 set(gca,'Units','centimeters','Position',[osx osy w h],'FontName',FntN,'fontsize',FntS,'XMinorTick','on','YMinorTick','on')
 legend('Location','south'); legend boxoff
 hold off
+
+%% Save figure
+if save_figure
+    print(figure_batch_plot,'-dpng',['-r','1000'], [dir_name '/batch_plot.png'])
+end
 
 end
 
