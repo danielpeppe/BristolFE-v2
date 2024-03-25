@@ -131,8 +131,8 @@ abs_bdry_pts = [
 %% DEFINE MESH
 
 %Work out element size (slightly different from actual element size)
-% el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
-el_size = 1.5261e-05; %OVERRIDE ELEMENT SIZE FOR CONSISTENCY
+el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
+% el_size = 1.5261e-05; %OVERRIDE ELEMENT SIZE FOR CONSISTENCY
 op.el_size = el_size; %SAVE ELEMENT SIZE
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
