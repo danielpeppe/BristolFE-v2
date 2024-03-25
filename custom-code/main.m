@@ -27,8 +27,9 @@ op.params = [];
 
 %Data gen
 op.data_gen = 1;
-N_BATCHES = 2;
-op.data_gen_batch_size = 10;
+N_BATCHES_START = 2;
+N_BATCHES_END = 2;
+op.data_gen_batch_size = 1000;
 op.data_gen_load = 0;
 
 
@@ -42,24 +43,25 @@ if op.data_gen_load
     % fn_plot_porosity_correlations(op_save, 'porosity')
 
 elseif op.data_gen
-    for BATCH_NUMBER = 1:N_BATCHES
+    for BATCH_NUMBER = N_BATCHES_START:N_BATCHES_END
         %Set default options
         [op, op_output, default_op] = fn_set_options(op);
         %Set data gen vars
         % [name, variation type, perc variation (95% of values sit val% between default op value)
         small_var = 0.01;
-        med_var = 0.05;
+        med_var = 0.025;
+        large_var = 0.05;
         op.data_gen_vars = {
-                    {"specimen_size", "norm", small_var}
-                    {"ply0_rho_multiplier", "norm", small_var}
-                    {"ply90_rho_multiplier", "norm", small_var}
-                    {"ply90_D_multiplier", "norm", small_var}
-                    {"ply0_D_multiplier", "norm", small_var}
+                    % {"specimen_size", "norm", small_var}
+                    {"ply0_rho_multiplier", "norm", large_var}
+                    {"ply90_rho_multiplier", "norm", large_var}
+                    {"ply0_D_multiplier", "norm", large_var}
+                    {"ply90_D_multiplier", "norm", large_var}
                     % {"rayleigh_quality_factor", "norm", small_var} %damping changed anyway because its dependent on K and M
-                    % {"interply_rho_multiplier", "norm", small_var}
-                    % {"interply_D_multiplier", "norm", small_var}
-                    {"water_rho_multiplier", "norm", med_var}
-                    {"water_D_multiplier", "norm", med_var}
+                    {"interply_rho_multiplier", "norm", large_var}
+                    {"interply_D_multiplier", "norm", large_var}
+                    {"water_rho_multiplier", "norm", large_var}
+                    {"water_D_multiplier", "norm", large_var}
                     {"porosity", "lin", op.porosity_range}
                     {"porosity_r_sigma_tuner", "lin", [0.5 1.5]}
                     {"porosity_dist_mu_tuner", "lin", [0.5 1.5]}
@@ -72,7 +74,7 @@ elseif op.data_gen
         steps = cell(1, n);
         op_save = cell(1, n);
         %Create data folder
-        dir_name = ['C:/Users/danjm/Documents/IRP/data/batch' char(string(BATCH_NUMBER))];
+        dir_name = ['C:/Users/danjm/Documents/IRP_data/data/batch' char(string(BATCH_NUMBER))];
         if isfolder(dir_name)
             error('Directory already exists!');
         end
@@ -90,17 +92,17 @@ elseif op.data_gen
         for i = 1:n
             fprintf("----------------------------------- No %d/%d ------------------------------------------\n", i, n)
             op = fn_prep_data_gen(op);
-            fn_print_default_options(op, default_op);
+            % fn_print_default_options(op, default_op);
             fprintf("---------------------------------------------------------------------------------------\n")
             %Generate data
             [res{1,i}, steps{1,i}, op_save{1,i}] = run_sim(op, op_output);
             %Get attenuation
-            op_save = fn_get_attenuation(op_save, res, i);
+            op_save = fn_get_attenuation(op_save, res, i); %UPDATE TO TAKE op_save{1,i} instead of op_save
             %Save data
-            dsp_sum = sum(res{1,i}{1}.dsps);
+            dsp_data = sum(res{1,i}{1}.dsps);
             time_data = steps{1,i}{1}.load.time;
             op_config = op_save{1,i};
-            save([dir_name '/response' char(string(i)) '.mat'], 'dsp_sum', 'time_data', 'op_config')
+            save([dir_name '/response' char(string(i)) '.mat'], 'dsp_data', 'time_data', 'op_config')
         end
     
         %Save important plots

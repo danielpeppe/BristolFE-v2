@@ -53,11 +53,11 @@ mat.resin.el_typ = 'CPE3';
 
 %% DEFINE BOUNDARY MATERIALS
 
-%Intraply boundary
-mat.resin_intra = mat.resin;
-mat.resin_intra.col = hsv2rgb([0.50,.75,.60]);
-mat.resin_intra.rho = mat.resin.rho * op.intraply_rho_multiplier;
-mat.resin_intra.D = mat.resin.D * op.intraply_D_multiplier;
+% %Intraply boundary
+% mat.resin_intra = mat.resin;
+% mat.resin_intra.col = hsv2rgb([0.50,.75,.60]);
+% mat.resin_intra.rho = mat.resin.rho * op.intraply_rho_multiplier;
+% mat.resin_intra.D = mat.resin.D * op.intraply_D_multiplier;
 %Water
 % For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
 % calcualted here from ultrasonic velocity (1500) and density (1000)
@@ -65,18 +65,18 @@ mat.water.rho = 1000 * op.water_rho_multiplier;
 mat.water.D = 1500^2 * 1000 * op.water_D_multiplier;
 mat.water.col = hsv2rgb([0.6,0.5,0.8]);
 mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
-%solid/fake water
-if op.solidwater
-    mat.solidwater.rho = 1000 * op.solidwater_rho_multiplier;
-    mat.solidwater.D = op.solidwater_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4e9, 0.3);
-    mat.solidwater.col = hsv2rgb([0.6,0.75,0.8]);
-    mat.solidwater.el_typ = 'CPE3';
-end
-%Steel
-mat.steel.rho = 8900; %8900
-mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
-mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
-mat.steel.el_typ = 'CPE3';
+% %solid/fake water
+% if op.solidwater
+%     mat.solidwater.rho = 1000 * op.solidwater_rho_multiplier;
+%     mat.solidwater.D = op.solidwater_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4e9, 0.3);
+%     mat.solidwater.col = hsv2rgb([0.6,0.75,0.8]);
+%     mat.solidwater.el_typ = 'CPE3';
+% end
+% %Steel
+% mat.steel.rho = 8900; %8900
+% mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
+% mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
+% mat.steel.el_typ = 'CPE3';
 
 %Define matls struct from mat
 [matls, R_coefs] = fn_get_matls_struct(op, mat);
@@ -223,8 +223,8 @@ steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * op.src_dir;
 %Also provide the time signal for the loading (if this is a vector, it will
 %be applied at all frc_nds/frc_dfs simultaneously; alternatively it can be a matrix
 %of different time signals for each frc_nds/frc_dfs
-% time_step = fn_get_suitable_time_step(matls, el_size, op.scale_units, op.time_step_safety_factor);
-time_step = 4.5002e-10; %OVERRISE TIMESTEP FOR CONSISTENCY
+time_step = fn_get_suitable_time_step(matls, el_size, op.scale_units, op.time_step_safety_factor);
+% time_step = 4.5002e-10; %OVERRISE TIMESTEP FOR CONSISTENCY
 steps{1}.load.time = 0: time_step:  max_time;
 steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycles);
 
