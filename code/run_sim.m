@@ -53,11 +53,11 @@ mat.resin.el_typ = 'CPE3';
 
 %% DEFINE BOUNDARY MATERIALS
 
-% %Intraply boundary
-% mat.resin_intra = mat.resin;
-% mat.resin_intra.col = hsv2rgb([0.50,.75,.60]);
-% mat.resin_intra.rho = mat.resin.rho * op.intraply_rho_multiplier;
-% mat.resin_intra.D = mat.resin.D * op.intraply_D_multiplier;
+%Intraply boundary
+mat.resin_intra = mat.resin;
+mat.resin_intra.col = hsv2rgb([0.50,.75,.60]);
+mat.resin_intra.rho = mat.resin.rho * op.intraply_rho_multiplier;
+mat.resin_intra.D = mat.resin.D * op.intraply_D_multiplier;
 %Water
 % For fluids, stiffness 'matrix' D is just the scalar bulk modulus,
 % calcualted here from ultrasonic velocity (1500) and density (1000)
