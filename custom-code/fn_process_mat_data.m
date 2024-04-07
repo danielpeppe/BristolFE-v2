@@ -8,7 +8,7 @@ else
 end
 
 %Create csv file for porosity_response_data
-data_path = "C:/Users/danjm/Documents/IRP_data/data/";
+data_path = "data/";
 file_ID = fopen(data_path + "porosity_response_data.csv", 'w');
 
 %Reduce resolution of data

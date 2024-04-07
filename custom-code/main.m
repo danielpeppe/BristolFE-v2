@@ -27,9 +27,9 @@ op.params = [];
 
 %Data gen
 op.data_gen = 1;
-N_BATCHES_START = 23;
-N_BATCHES_END = 60;
-op.data_gen_batch_size = 1000;
+N_BATCHES_START = 1;
+N_BATCHES_END = 50;
+op.data_gen_batch_size = 1;
 op.data_gen_load = 0;
 
 
@@ -56,7 +56,7 @@ elseif op.data_gen
                 {"ply90_rho_multiplier", "norm", med_var}
                 {"ply0_D_multiplier", "norm", med_var}
                 {"ply90_D_multiplier", "norm", med_var}
-                % {"rayleigh_quality_factor", "norm", small_var} %damping changed anyway because its dependent on K and M
+                % {"rayleigh_quality_factor", "norm", med_var} %damping changed anyway because its dependent on K and M
                 % {"interply_rho_multiplier", "norm", med_var}
                 % {"interply_D_multiplier", "norm", med_var}
                 {"water_rho_multiplier", "norm", large_var}
@@ -75,11 +75,11 @@ elseif op.data_gen
         steps = cell(1, n);
         op_save = cell(1, n);
         %Create data folder
-        dir_name = ['C:/Users/danjm/Documents/IRP_data/data/batch' char(string(BATCH_NUMBER))];
-        if isfolder(dir_name)
+        batch_path = "data/batch" + BATCH_NUMBER;
+        if isfolder(batch_path)
             error('Directory already exists!');
         end
-        mkdir(dir_name)
+        mkdir(batch_path)
         
         % %Run default sim with no porosity
         % fprintf("----------------------------- No 1/%d (no porosity) ------------------------------------\n", n)
@@ -95,25 +95,29 @@ elseif op.data_gen
             op_var = fn_prep_data_gen(op);
             % fn_print_default_options(op, default_op);
             fprintf("---------------------------------------------------------------------------------------\n")
+
             %Generate data
             [res{1,i}, steps{1,i}, op_save{1,i}] = run_sim(op_var, op_output);
+
             %Get attenuation
             op_save = fn_get_attenuation(op_save, res, i); %TODO: update to take op_save{1,i} as input instead of op_save
+
             %Save data
             dsp_data = sum(res{1,i}{1}.dsps);
             time_data = steps{1,i}{1}.load.time;
             op_config = op_save{1,i};
-            save([dir_name '/response' char(string(i)) '.mat'], 'dsp_data', 'time_data', 'op_config')
+            response_file_path = batch_path + "/response" + i + ".mat";
+            save(response_file_path, 'dsp_data', 'time_data', 'op_config')
         end
         
         %Save important plots
-        % fn_plot_batch(op_save, res, steps, exp_data, 1, dir_name);
-        % fn_plot_porosity_correlations(op_save, 'porosity', 1, dir_name)
+        fn_plot_batch(op_save, res, steps, exp_data, 1, batch_path);
+        fn_plot_porosity_correlations(op_save, 'porosity', 1, batch_path)
         
-        % fn_plot_porosity_correlations(op_save, 'total_n_pores', 1, dir_name)
-        % fn_plot_porosity_correlations(op_save, 'porosity_r_sigma_tuner', 1, dir_name)
-        % fn_plot_porosity_correlations(op_save, 'porosity_dist_mu_tuner', 1, dir_name)
-        % fn_plot_porosity_correlations(op_save, 'porosity_dist_sigma_tuner', 1, dir_name)
+        % fn_plot_porosity_correlations(op_save, 'total_n_pores', 1, batch_path)
+        % fn_plot_porosity_correlations(op_save, 'porosity_r_sigma_tuner', 1, batch_path)
+        % fn_plot_porosity_correlations(op_save, 'porosity_dist_mu_tuner', 1, batch_path)
+        % fn_plot_porosity_correlations(op_save, 'porosity_dist_sigma_tuner', 1, batch_path)
     end
 elseif isempty(op.params)
     fprintf("--------------------------- RUNNNING ONE SIM -----------------------------------\n")

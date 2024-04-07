@@ -1,22 +1,19 @@
-clear;
-close all;
-% restoredefaultpath;
-addpath("../code");
+function fn_plot_batch_from_save(batch_number)
 
-figure_batch_plot = figure;
-
+figure;
 FntN='Times New Roman';
 FntS = 13;
 
 % Count the number of .mat files
-dir_name = 'C:/Users/danjm/Documents/IRP_data/data/batch10';
-mat_files = dir(fullfile(dir_name, '*.mat'));
+batch_path = "data/batch" + batch_number;
+mat_files = dir(fullfile(batch_path, '*.mat'));
 n_mat_files = numel(mat_files);
 
 %Iterate over sim results
 for i = 1:n_mat_files
-   
-    load([dir_name '/response' char(string(i)) '.mat'], 'dsp_data', 'time_data', 'op_config')
+    
+    response_path = batch_path + "/response" + i + ".mat";
+    load(response_path, 'dsp_data', 'time_data', 'op_config')
 
     res_norm = dsp_data/max(abs(dsp_data)); %Scale exp response to match sim response
     
@@ -38,3 +35,5 @@ set(groot,{'DefaultAxesXColor','DefaultAxesYColor','DefaultAxesZColor'},{'k','k'
 set(gca,'Units','centimeters','Position',[osx osy w h],'FontName',FntN,'fontsize',FntS,'XMinorTick','on','YMinorTick','on')
 % legend('Location','south'); legend boxoff
 hold off
+
+end
