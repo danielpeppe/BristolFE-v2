@@ -1,59 +1,82 @@
-function fn_process_mat_data(batch_name)
+function fn_process_mat_data(batch_num_lower, varargin)
 
-% Prepare the data row
-
-% Specify the file name
-file_name = 'data.csv';
-
-% Open the file in write mode
-file_id = fopen(file_name, 'w');
-
-% Write the data row to the file
-% The format '%f;' specifies that each number should be written as a floating point,
-% followed by a semicolon. The '\n' specifies a new line at the end of the row.
-fprintf(file_id, '%f;', data_row);
-
-% Optionally, you might want to write a new line at the end if you plan to add more rows later
-fprintf(file_id, '\n');
-
-% Close the file
-fclose(file_id);
-
-% Note: This will write the data row to 'data.csv' with semicolon delimiters.
-% If you want to include column headers, you can write them to the file before writing the data.
-
-
-folder_path = ['data/' batch_name];
-
-% Count the number of .mat files
-mat_files = dir(fullfile(folder_path, '*.mat'));
-n_mat_files = numel(mat_files);
-
-% New sampling rate is 1/n of the original
-n = 1;
-[p, q] = rat(1/n); % For a downsampling factor n
-
-for i = 1:n_mat_files
-    % Step 1: Load the .mat file
-    % Replace 'yourFile.mat' with the path to your .mat file
-    load([folder_path '/response' char(string(i)) '.mat'], 'res', 'steps', 'op_save')
-    
-    %Get time and displacement data
-    time_data = steps{1,1}{1}.load.time;
-    dsp_sum = sum(res{1,1}{1}.dsps);
-    dsp_norm = dsp_sum/max(abs(dsp_sum));
-
-    %Downsample results
-    time_data_ds = resample(time_data, p, q);
-    dsp_data_ds = resample(dsp_norm, p, q);
-
-    %Get porosity level
-    porosity = op.save{1,1}{1}.porosity;
-
-    data_row = [porosity, time_data]; % Concatenate porosity and time data
-
-    writematrix(timeData, ['data_' bach_name '.csv']);
-
+%Define upper batch bound as lower batch bound if nothing input
+if isempty(varargin)
+    batch_num_upper = batch_num_lower;
+else
+    batch_num_upper = varargin{1};
 end
+
+%Create csv file for porosity_response_data
+data_path = "C:/Users/danjm/Documents/IRP_data/data/";
+file_ID = fopen(data_path + "porosity_response_data.csv", 'w');
+
+%Reduce resolution of data
+time_step = 1/50e6;
+max_time = 3.5e-6;
+new_time_data = 0:time_step:max_time;
+
+%Write time data to top of csv
+fprintf(file_ID, '%s,%s,%s,', 'batchID', 'responseID', 'porosity');
+for ii = 1:(length(new_time_data) - 1)
+    fprintf(file_ID, '%s,', "timeData" + ii);
+end
+fprintf(file_ID, '\n');
+fprintf(file_ID, '%s,%s,%s,', 'NaN', 'NaN', 'NaN');
+for ii = 1:(length(new_time_data) - 1)
+    fprintf(file_ID, '%.15f,', new_time_data(ii));
+end
+fprintf(file_ID, '\n');
+
+%Loop over batches
+for batch_number = batch_num_lower:batch_num_upper
+    %Get batch folder path
+    folder_path = data_path + "batch" + batch_number;
+
+    %Count the number of responses in batch
+    responses = dir(fullfile(folder_path, '*.mat'));
+    n_responses = numel(responses);
+    fprintf('writing batch: %d with responses: %d...', batch_number, n_responses)
+
+    %Loop over responses
+    for i = 1:n_responses
+        %Load response variables
+        file_path = folder_path + "/response" + i + ".mat";
+        load(file_path, 'dsp_data', 'time_data', 'op_config')
+        if size(dsp_data) ~= size(time_data)
+            warning('Time and Displacement data are different sizes')
+        end
+        
+        %Reduce resolution of displacement data
+        new_dsp_data = interp1(time_data, dsp_data, new_time_data, 'linear');
+        new_dsp_data = new_dsp_data(1:(end-1)); %last value is NaN
+
+        %Write batch ID
+        fprintf(file_ID, '%s,%s,', "batch" + batch_number, "response" + i);
+
+        %Write time data and porosity
+        % fprintf(file_ID, '%s,', "time" + i);
+        % fprintf(file_ID, '%f,', op_config.porosity);
+        % for ii = 1:length(new_time_data)
+        %     fprintf(file_ID, '%.15f,', new_time_data(ii));
+        % end
+        % fprintf(file_ID, '\n');
+
+        %Write displacement data (ensure NaN is placed to line up porosity)
+        % fprintf(file_ID, '%s,', 'NaN');
+        % fprintf(file_ID, '%s,', 'NaN');
+        % fprintf(file_ID, '%s,', "displacement" + i);
+        % fprintf(file_ID, '%s,', 'NaN');
+        fprintf(file_ID, '%f,', op_config.porosity);
+        for ii = 1:length(new_dsp_data)
+            fprintf(file_ID, '%.15f,', new_dsp_data(ii));
+        end
+        fprintf(file_ID, '\n');
+    end
+    fprintf('completed\n')
+end
+
+fclose(file_ID);
+
 end
 
