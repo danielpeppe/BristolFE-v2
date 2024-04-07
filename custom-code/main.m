@@ -27,8 +27,8 @@ op.params = [];
 
 %Data gen
 op.data_gen = 1;
-N_BATCHES_START = 2;
-N_BATCHES_END = 2;
+N_BATCHES_START = 23;
+N_BATCHES_END = 60;
 op.data_gen_batch_size = 1000;
 op.data_gen_load = 0;
 
@@ -43,31 +43,32 @@ if op.data_gen_load
     % fn_plot_porosity_correlations(op_save, 'porosity')
 
 elseif op.data_gen
-    for BATCH_NUMBER = N_BATCHES_START:N_BATCHES_END
-        %Set default options
-        [op, op_output, default_op] = fn_set_options(op);
-        %Set data gen vars
-        % [name, variation type, perc variation (95% of values sit val% between default op value)
-        small_var = 0.01;
-        med_var = 0.025;
-        large_var = 0.05;
-        op.data_gen_vars = {
-                    % {"specimen_size", "norm", small_var}
-                    {"ply0_rho_multiplier", "norm", large_var}
-                    {"ply90_rho_multiplier", "norm", large_var}
-                    {"ply0_D_multiplier", "norm", large_var}
-                    {"ply90_D_multiplier", "norm", large_var}
-                    % {"rayleigh_quality_factor", "norm", small_var} %damping changed anyway because its dependent on K and M
-                    {"interply_rho_multiplier", "norm", large_var}
-                    {"interply_D_multiplier", "norm", large_var}
-                    {"water_rho_multiplier", "norm", large_var}
-                    {"water_D_multiplier", "norm", large_var}
-                    {"porosity", "lin", op.porosity_range}
-                    {"porosity_r_sigma_tuner", "lin", [0.5 1.5]}
-                    {"porosity_dist_mu_tuner", "lin", [0.5 1.5]}
-                    {"porosity_dist_sigma_tuner", "lin", [0.5 1.5]}
-                   };
+    %Set default options
+    [op, op_output, default_op] = fn_set_options(op);
+    %Set data gen vars
+    % [name, variation type, perc variation (95% of values sit val% between default op value)
+    small_var = 0.01;
+    med_var = 0.02;
+    large_var = 0.03;
+    op.data_gen_vars = {
+                % {"specimen_size", "norm", small_var}
+                {"ply0_rho_multiplier", "norm", med_var}
+                {"ply90_rho_multiplier", "norm", med_var}
+                {"ply0_D_multiplier", "norm", med_var}
+                {"ply90_D_multiplier", "norm", med_var}
+                % {"rayleigh_quality_factor", "norm", small_var} %damping changed anyway because its dependent on K and M
+                % {"interply_rho_multiplier", "norm", med_var}
+                % {"interply_D_multiplier", "norm", med_var}
+                {"water_rho_multiplier", "norm", large_var}
+                {"water_D_multiplier", "norm", large_var}
+                {"porosity", "lin", op.porosity_range}
+                {"porosity_r_sigma_tuner", "lin", [0.5 1.5]}
+                {"porosity_dist_mu_tuner", "lin", [0.5 1.5]}
+                {"porosity_dist_sigma_tuner", "lin", [0.5 1.5]}
+               };
 
+    for BATCH_NUMBER = N_BATCHES_START:N_BATCHES_END
+        
         %Initialise variables
         n = op.data_gen_batch_size;
         res = cell(1, n);
@@ -91,23 +92,23 @@ elseif op.data_gen
         fprintf("--------------------------- RUNNNING BATCH OF SIMS ------------------------------------\n")
         for i = 1:n
             fprintf("----------------------------------- No %d/%d ------------------------------------------\n", i, n)
-            op = fn_prep_data_gen(op);
+            op_var = fn_prep_data_gen(op);
             % fn_print_default_options(op, default_op);
             fprintf("---------------------------------------------------------------------------------------\n")
             %Generate data
-            [res{1,i}, steps{1,i}, op_save{1,i}] = run_sim(op, op_output);
+            [res{1,i}, steps{1,i}, op_save{1,i}] = run_sim(op_var, op_output);
             %Get attenuation
-            op_save = fn_get_attenuation(op_save, res, i); %UPDATE TO TAKE op_save{1,i} instead of op_save
+            op_save = fn_get_attenuation(op_save, res, i); %TODO: update to take op_save{1,i} as input instead of op_save
             %Save data
             dsp_data = sum(res{1,i}{1}.dsps);
             time_data = steps{1,i}{1}.load.time;
             op_config = op_save{1,i};
             save([dir_name '/response' char(string(i)) '.mat'], 'dsp_data', 'time_data', 'op_config')
         end
-    
+        
         %Save important plots
-        fn_plot_batch(op_save, res, steps, exp_data, 1, dir_name);
-        fn_plot_porosity_correlations(op_save, 'porosity', 1, dir_name)
+        % fn_plot_batch(op_save, res, steps, exp_data, 1, dir_name);
+        % fn_plot_porosity_correlations(op_save, 'porosity', 1, dir_name)
         
         % fn_plot_porosity_correlations(op_save, 'total_n_pores', 1, dir_name)
         % fn_plot_porosity_correlations(op_save, 'porosity_r_sigma_tuner', 1, dir_name)
