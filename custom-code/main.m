@@ -29,7 +29,7 @@ op.params = [];
 op.data_gen = 1;
 N_BATCHES_START = 1;
 N_BATCHES_END = 50;
-op.data_gen_batch_size = 1;
+op.data_gen_batch_size = 1000;
 op.data_gen_load = 0;
 
 

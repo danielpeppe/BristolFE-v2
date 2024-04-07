@@ -1,4 +1,4 @@
-function fn_plot_batch(op_save, res, steps, exp_data, save_figure, data_folder_path)
+function fn_plot_batch(op_save, res, steps, exp_data, save_figure, batch_path)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -60,7 +60,7 @@ hold off
 
 %% Save figure
 if save_figure
-    print(figure_batch_plot,'-dpng',['-r','1000'], [data_folder_path '/batch_plot.png'])
+    print(figure_batch_plot,'-dpng',['-r','1000'], batch_path + "/batch_plot.png")
 end
 
 end

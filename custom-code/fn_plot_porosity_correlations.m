@@ -1,4 +1,4 @@
-function fn_plot_porosity_correlations(op_save, fieldname, save_figure, dir_name)
+function fn_plot_porosity_correlations(op_save, fieldname, save_figure, batch_path)
 
 %Plot Final Results
 if save_figure
@@ -22,7 +22,8 @@ xlabel(string(fieldname))
 
 %% Save figure
 if save_figure
-    print(figure1,'-dpng',['-r','1000'], [dir_name '/' fieldname '_plot.png'])
+    porosity_plot_path = batch_path + "/" + fieldname + "_plot.png";
+    print(figure1,'-dpng',['-r','1000'], porosity_plot_path)
 end
 
 
