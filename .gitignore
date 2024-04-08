@@ -2,3 +2,6 @@
 *.mat
 *.mp4
 *test.m
+*.png
+*.txt
+*.csv
