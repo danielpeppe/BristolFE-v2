@@ -27,7 +27,7 @@ op.params = [];
 
 %Data gen
 op.data_gen = 1;
-N_BATCHES_START = 1;
+N_BATCHES_START = 23;
 N_BATCHES_END = 50;
 op.data_gen_batch_size = 1000;
 op.data_gen_load = 0;
@@ -48,17 +48,17 @@ elseif op.data_gen
     %Set data gen vars
     % [name, variation type, perc variation (95% of values sit val% between default op value)
     small_var = 0.01;
-    med_var = 0.02;
-    large_var = 0.03;
+    med_var = 0.05;
+    large_var = 0.10;
     op.data_gen_vars = {
-                % {"specimen_size", "norm", small_var}
+                {"specimen_size", "norm", small_var}
                 {"ply0_rho_multiplier", "norm", med_var}
                 {"ply90_rho_multiplier", "norm", med_var}
                 {"ply0_D_multiplier", "norm", med_var}
                 {"ply90_D_multiplier", "norm", med_var}
-                % {"rayleigh_quality_factor", "norm", med_var} %damping changed anyway because its dependent on K and M
-                % {"interply_rho_multiplier", "norm", med_var}
-                % {"interply_D_multiplier", "norm", med_var}
+                {"rayleigh_quality_factor", "norm", med_var} %damping changed anyway because its dependent on K and M
+                {"interply_rho_multiplier", "norm", med_var}
+                {"interply_D_multiplier", "norm", med_var}
                 {"water_rho_multiplier", "norm", large_var}
                 {"water_D_multiplier", "norm", large_var}
                 {"porosity", "lin", op.porosity_range}
