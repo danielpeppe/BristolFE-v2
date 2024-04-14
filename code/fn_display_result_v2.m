@@ -53,7 +53,7 @@ if display_options.interface_el_col
     [i, ~] = find(els == 0 | isnan(els));
     x = [nds(els(i, 1), 1), nds(els(i, 2), 1)]';
     y = [nds(els(i, 1), 2), nds(els(i, 2), 2)]';
-    plot(x, y, display_options.interface_el_col);
+    plot(x, y, 'Color', display_options.interface_el_col);
 end
 
 if display_options.show_abs
