@@ -79,7 +79,7 @@ mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
 % mat.steel.el_typ = 'CPE3';
 
 %Define matls struct from mat
-[matls, R_coefs] = fn_get_matls_struct(op, mat);
+[matls, Z, R_coefs] = fn_get_matls_struct(op, mat);
 
 %% DEFINE SHAPE OF MODEL
 

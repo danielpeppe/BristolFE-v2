@@ -1,4 +1,4 @@
-function [matls, R_coefs] = fn_get_matls_struct(op, mat, varargin)
+function [matls, Z, R_coefs] = fn_get_matls_struct(op, mat, varargin)
 %UNTITLED Summary of this function goes here
 % %   Detailed explanation goes here
 
@@ -51,8 +51,7 @@ Z = zeros(n_matls, 1);
 for i = 1:n_matls
     [max_vel_i, min_vel_i] = fn_estimate_max_min_vels(matls(i), op.scale_units);
     avg_vel = (max_vel_i + min_vel_i)/2;
-    Z_i = matls(i).rho * avg_vel;
-    Z(i) = Z_i;
+    Z(i) = matls(i).rho * avg_vel;
 end
 %Calculate reflectivity coefficients (from i into j)
 R_coefs = zeros(n_matls, n_matls);

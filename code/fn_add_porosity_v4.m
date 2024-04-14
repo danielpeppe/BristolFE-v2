@@ -65,7 +65,7 @@ elseif op.porosity_use_density
         end
     end
     %Define matls struct from mat
-    [matls, R_coefs] = fn_get_matls_struct(op, mat, matls);
+    [matls, Z, R_coefs] = fn_get_matls_struct(op, mat, matls);
 end
 
 %% NUMBER OF PORES
