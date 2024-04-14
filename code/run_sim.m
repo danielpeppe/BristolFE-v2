@@ -242,7 +242,7 @@ steps{1}.mon.dfs = ones(size(steps{1}.mon.nds)) * op.src_dir;
 %% DISPLAY MODEL
 
 %Display options
-display_options.interface_el_col = 'b';
+% display_options.interface_el_col = hsv2rgb([0.50,.75,.60]);
 display_options.draw_elements = 0;
 display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
 display_options.node_sets_to_plot(1).col = 'r.';
@@ -250,8 +250,9 @@ display_options.node_sets_to_plot(2).nd = steps{1}.mon.nds;
 display_options.node_sets_to_plot(2).col = 'b.';
 %Plot geometry
 if justgeometry
-    figure; 
+    fig1 = figure; 
     h_patch = fn_show_geometry(mod, matls, display_options);
+    %print(fig1,'-dpng',['-r','1000'], "model_geom.png")
     res{1} = {0};
     return
 elseif geometry
@@ -298,7 +299,6 @@ if plot_exp_data
     translate_time = 1.1964e-05; %Start of exp response
     %Plot
     plot(exp_data.time - translate_time, aperture_dsp_data * scale_dsps, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
-
     hold off
 end
 
