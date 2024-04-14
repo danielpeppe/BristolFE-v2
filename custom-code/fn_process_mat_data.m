@@ -31,6 +31,7 @@ end
 fprintf(file_ID, '\n');
 
 %Loop over batches
+total_n_responses = 0;
 for batch_number = batch_num_lower:batch_num_upper
     %Get batch folder path
     batch_path = data_path + "batch" + batch_number;
@@ -38,6 +39,7 @@ for batch_number = batch_num_lower:batch_num_upper
         %Count the number of responses in batch
         responses = dir(fullfile(batch_path, '*.mat'));
         n_responses = numel(responses);
+        total_n_responses = total_n_responses + n_responses;
         fprintf('writing batch: %d with responses: %d...', batch_number, n_responses)
     
         %Loop over responses
@@ -79,6 +81,7 @@ for batch_number = batch_num_lower:batch_num_upper
     end
 end
 
+fprintf('Total Number of responses: %d\n', total_n_responses)
 fclose(file_ID);
 
 end
