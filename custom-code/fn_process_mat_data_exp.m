@@ -28,7 +28,7 @@ load("g4-s8_x-8000_z0_025.mat","exp_data");
 figure;
 
 total_transducer_els = 128;
-for aperture_size = [8 16]
+for aperture_size = [4 8 16 32]
     aperture_vec = 1:aperture_size:total_transducer_els;
 
     %Loop over apertures
@@ -47,8 +47,15 @@ for aperture_size = [8 16]
         aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
         
         %Find response start
-        response_start_vec = find(abs(aperture_dsp_data) > 0.2);
-        response_start_vec_max = find(abs(aperture_dsp_data) > 0.5);
+        ratio_of_max = 0.007;
+        % if aperture_size == 8 || aperture_size == 16
+        %     % ratio_of_max = 0.0079;
+        % elseif aperture_size == 32
+        %     % ratio_of_max = 0.0020;
+        %     disp('hello')
+        % end
+        response_start_vec = find(abs(aperture_dsp_data) > ratio_of_max*max(abs(aperture_dsp_data)));
+        response_start_vec_max = find(abs(aperture_dsp_data) > 1.2*ratio_of_max*max(abs(aperture_dsp_data)));
         for ii = 1:length(response_start_vec)
             if response_start_vec(ii) - response_start_vec_max(ii) < 1
                 response_start = response_start_vec(ii);
