@@ -147,7 +147,7 @@ if op.n_plys_per_type == 0
     error("Option error: n_plys_per_type must be an integer > 0")
 end
 if ~op.interply_boundary && op.interply_el_thickness_perc
-    error("Option error: set op.interply_boundary = 0 if op.interply_el_thickness != 0")
+    error("Option error: set op.interply_boundary = 0 if op.interply_el_thickness_perc != 0")
 end
 %Water options
 if op.water_interface_perc && op.water_interface_single
