@@ -159,7 +159,7 @@ if op.solidwater
 end
 %Set specimen materials
 if op.solid_specimen
-    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls,"ply90"));
+    mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls, op.layer1));
 elseif op.composite_specimen
     if op.upper_water_present
         [mod, new_top_of_specimen] = fn_set_ply_material(mod, op, matls, specimen_brdy_pts);
@@ -167,11 +167,14 @@ elseif op.composite_specimen
         %v2 does not suppot op.upper_water_present
         [mod, comp] = fn_set_ply_material_v2(mod, op, matls);
     end
+
+    %Add porosity
+    %   Doesn't support intRAply layers or 2 types of intERply layers
+    %   Doesn't support solid specimens (because comp is needed)
+    [mod, matls, op] = fn_add_porosity_v4(mod, op, matls, comp);
 end
 
-%Add porosity
-%Doesn't support intRAply layers or 2 types of intERply layers
-[mod, matls, op] = fn_add_porosity_v4(mod, op, matls, comp);
+
 
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
@@ -232,7 +235,8 @@ steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycle
 %these have to be same as forcing points)
 if op.separate_receiver
     % receiver_end_pts = src_end_pts - mod.el_height*[0 1; 0 1];
-    receiver_end_pts = src_end_pts - op.specimen_size*[0 1; 0 1];
+    % receiver_end_pts = src_end_pts - op.specimen_size*[0 1; 0 1];
+    receiver_end_pts = src_end_pts + model_width*[1 0; 1 0];
     steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, receiver_end_pts(1, :), receiver_end_pts(2, :), el_size / 2);
 else
     steps{1}.mon.nds = fn_find_nodes_on_line(mod.nds, src_end_pts(1, :), src_end_pts(2, :), el_size / 2);
@@ -252,7 +256,7 @@ display_options.node_sets_to_plot(2).col = 'b.';
 if justgeometry
     fig1 = figure; 
     h_patch = fn_show_geometry(mod, matls, display_options);
-    %print(fig1,'-dpng',['-r','1000'], "model_geom.png")
+    %print(fig1,'-dpng',['-r','1000'], "model-geom-porosity.png")
     res{1} = {0};
     return
 elseif geometry
@@ -280,16 +284,19 @@ end
 if plot_sim_data
     %Show the history output as a function of time - here we just sum over all 
     %the nodes where displacments were recorded
-    figure;
+    fig2 = figure;
+
     % translate_time = 1.1964e-05; %Start of exp response
     % plot(steps{1}.load.time + translate_time * op.plot_scale_time, res_sum_dsps * op.plot_scale_dsps);
     plot(steps{1}.load.time, res_sum_dsps * op.plot_scale_dsps);
     xlabel('Time (s)')
     ylabel('Magnitude (-)')
+
 end
 %Plot experimental data on top
 if plot_exp_data
     hold on
+    load("g4-s8_x-8000_z0_025.mat","exp_data");
     %Get time data for aperture
     aperture = 1:op.aperture_n_els;
     aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);

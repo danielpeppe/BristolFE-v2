@@ -13,8 +13,8 @@ load("g4-s8_x-8000_z0_025.mat","exp_data");
 anim_options.repeat_n_times = 10;
 fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no field output)
 %Output for each sim
-op_output.justgeometry = 1; %disables other outputs
-op_output.geometry = 1;
+op_output.justgeometry = 0; %disables other outputs
+op_output.geometry = 0;
 op_output.run_fea = 1;
 op_output.plot_sim_data = 0;
 op_output.plot_exp_data = 0;
@@ -23,13 +23,15 @@ op_output.animate = 0;
 op.porosity_plot_dists = 0;
 
 %PARAMS
-op.params = [];
+% op.params = {[0 0], [1 0.05]};
+% op.params = [5 10 15 20 30];
+op.params = 1;
 
 %Data gen
-op.data_gen = 1;
-N_BATCHES_START = 23;
-N_BATCHES_END = 50;
-op.data_gen_batch_size = 1000;
+op.data_gen = 0;
+N_BATCHES_START = 80;
+N_BATCHES_END = 89;
+op.data_gen_batch_size = 0;
 op.data_gen_load = 0;
 
 
@@ -41,15 +43,17 @@ if op.data_gen_load
     % %Plot signal
     % fn_plot_batch(op_save, res, steps, exp_data);
     % fn_plot_porosity_correlations(op_save, 'porosity')
-
 elseif op.data_gen
     %Set default options
     [op, op_output, default_op] = fn_set_options(op);
     %Set data gen vars
     % [name, variation type, perc variation (95% of values sit val% between default op value)
-    small_var = 0.01;
-    med_var = 0.05;
-    large_var = 0.10;
+    % small_var = 0.01;
+    % med_var = 0.05;
+    % large_var = 0.10;
+    small_var = 0.05;
+    med_var = 0.10;
+    large_var = 0.20;
     op.data_gen_vars = {
                 {"specimen_size", "norm", small_var}
                 {"ply0_rho_multiplier", "norm", med_var}
@@ -125,7 +129,6 @@ elseif isempty(op.params)
     fprintf("--------------------------------------------------------------------------------\n")
     %Get results
     [res{1}, steps{1}] = run_sim(op, op_output, {fe_options, anim_options, exp_data});
-
 else
     fprintf("--------------------------- RUNNNING MULTIPLE SIMS -----------------------------------\n")
     n = length(op.params);
@@ -136,7 +139,31 @@ else
         p = op.params(i);
         %%%%%%%%%%%%%%%% Params start %%%%%%%%%%%%%%%%
         % op.porosity = p;
-        op.centre_freq = p;
+        %INTERLAMINAR RESIN LAYER PLOT
+        % p = op.params{i};
+        % op.interply_boundary = p(1);
+        % op.interply_el_thickness_perc = p(2);
+        % op.ply0_D_multiplier = 1;
+        % op.ply90_D_multiplier = 1;
+        %CONVERGENCE TEST
+        % op.interply_boundary = 0;
+        % op.interply_el_thickness_perc = 0;
+        % op.rayleigh_quality_factor = inf;
+        % op.els_per_wavelength = p;
+        %POROSITY
+        % op.porosity = 3;
+        % op_output.justgeometry = 1;
+        %SPEED TEST
+        % op.layer1 = "ply90";
+        % op.porosity = 0;
+        % op.ply0_rho_multiplier = 1;
+        % op.ply0_rho_multiplier = 1;
+        %   HORIZONTAL
+        % op.test_horizontal_speed = 1;
+        % op.separate_receiver = 1;
+        %   VERTICAL
+        % op.solid_specimen = 1;
+        % op.composite_specimen = 0;
         %%%%%%%%%%%%%%%%% Params end %%%%%%%%%%%%%%%%%
         [op, op_output] = fn_set_options(op, op_output);
         fprintf("--------------------------------------------------------------------------------------\n")

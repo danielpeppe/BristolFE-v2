@@ -34,15 +34,16 @@ elseif op.porosity_use_density
     if porosity_r_max > porosity_r_absolute_max
         error('porosity_r_max is too high. Decrease porosity_r_max.')
     end
-    porosity_r_range = [porosity_r_min, porosity_r_max, porosity_r_absolute_max] * 1e6;
+    % porosity_r_range = [porosity_r_min, porosity_r_max, porosity_r_absolute_max] * 1e6;
     % fprintf("\n")
     % fprintf("using density: rad range: [%.2f, %.2f] (max: %.2f)\n", porosity_r_range)
     % fprintf("               el_height: %.2f\n", mod.el_height * 1e6)
     % fprintf("               max rho reduction: %.2f times\n", 1/(1 - pi*sqrt(3)*((porosity_r_max^2/mod.el_height^2))))
+    
 
     %Loop over pore types
     col_sat_arr = linspace(0.25, 1, op.porosity_n_pore_matls);
-    col_brightness_arr = linspace(0.5, 0.7, numel(op.porosity_matls_for_pores));
+    %col_brightness_arr = linspace(0.5, 0.7, numel(op.porosity_matls_for_pores));
     pore_r_arr = linspace(porosity_r_min, porosity_r_max, op.porosity_n_pore_matls);
     mat = struct();
     for i = 1:op.porosity_n_pore_matls
@@ -60,7 +61,7 @@ elseif op.porosity_use_density
             % mat.(pore_mat_field).D = matls(ply_mat_i).D;
             %Define everything else
             mat.(pore_mat_field).rayleigh_coefs = matls(ply_mat_i).rayleigh_coefs / scale_factor * op.porosity_damping_tuner ;
-            mat.(pore_mat_field).col = hsv2rgb([1, col_sat_arr(i), col_brightness_arr(ii)]); %just make sure colours are distinct, strange calculation here
+            mat.(pore_mat_field).col = hsv2rgb([.169, col_sat_arr(i), 1]); %just make sure colours are distinct, strange calculation here
             mat.(pore_mat_field).el_typ = 'CPE3';
         end
     end
@@ -122,10 +123,10 @@ end
 %Create ply layer probability distribution
 upper_layer = comp.ply_location_tracker{1, 1};
 lower_layer = comp.ply_location_tracker{op.n_ply_layers, 2};
-mu2 = (upper_layer + lower_layer)/2 * op.porosity_dist_mu_tuner; % You can set your desired mean, here it's set to the midpoint
-sigma2 = (upper_layer - lower_layer)/4 * op.porosity_dist_sigma_tuner; % Standard deviation; adjust as needed
+mu2 = (upper_layer + lower_layer)/2 * op.porosity_dist_mu_tuner;
+sigma2 = (upper_layer - lower_layer)/4 * op.porosity_dist_sigma_tuner;
 pore_dist_pd = makedist('Normal', 'mu', mu2, 'sigma', sigma2);
-% Truncate the normal distribution
+%Truncate the normal distribution
 pore_dist_trunc_pd = truncate(pore_dist_pd, lower_layer, upper_layer);
 
 %Assign pore material

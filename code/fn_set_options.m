@@ -129,7 +129,9 @@ fn_print_default_options(op, default_op)
 warning("OFF", "BACKTRACE");
 
 %Resolution options
-if op.els_per_wavelength < 15
+if op.els_per_wavelength ~= 15
+    warning("els_per_wavelength may be overrided in run_sim, please check!")
+elseif op.els_per_wavelength < 15
     warning("els_per_wavelength < 15")
 end
 if op.time_step_safety_factor < 3
@@ -202,6 +204,7 @@ end
 if op.test_horizontal_speed
     op.solid_specimen = 1;
     op.src_matl = "solid_horizontal";
+    op.src_dir = 1;
     op.composite_specimen = 0;
     op.lower_water_present = 0;
     op.water_bdry_thickness_perc = 0;
