@@ -17,7 +17,11 @@ end
 y_sorted = y(x_i);
 
 plot(x_sorted, y_sorted)
-ylabel('Attenuation [% of front-wall signal]')
+% xlabel('^{Front-wall Echo}/_{Back-wall Echo}', 'Interpreter', 'latex')
+% ylabel('$\displaystyle \frac{\mathrm{Front-wall Echo}}{\mathrm{Back-wall Echo}}$', 'Interpreter','latex')
+% ylabel('Equivalent attenuation (-)')
+ylabel('Reduction in back-wall echo (-)')
+
 xlabel(string(fieldname))
 
 %% Save figure
