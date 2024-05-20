@@ -6,9 +6,9 @@ addpath("../code");
 %% DEFINE OPTIONS
 
 %Save data
-op.data_gen_save_data = 0;
-N_BATCHES_START = 101;
-N_BATCHES_END = 101;
+op.data_gen_save_data = 1;
+N_BATCHES_START = 1;
+N_BATCHES_END = 1;
 BATCH_SIZE = 2;
 
 %Set data gen vars

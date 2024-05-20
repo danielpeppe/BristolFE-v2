@@ -11,9 +11,9 @@ fe_options.field_output_every_n_frames = 50; %10 or inf is default (inf = no fie
 %Output for each sim
 op_output.geometry = 0;
 op_output.run_fea = 1;
-op_output.plot_sim_data = 0;
+op_output.plot_sim_data = 1;
 op_output.plot_exp_data = 0;
-op_output.animate = 0;
+op_output.animate = 1;
 
 %Geometry display options
 display_options.interface_el_col = hsv2rgb([0.50,.75,.60]);
@@ -26,7 +26,6 @@ display_options.node_sets_to_plot(2).col = 'b.';
 op.load_exp = 0;
 if op.load_exp
     %Load exp data
-    load("g4-s8_x-8000_z0_025.mat","exp_data");
 else
     exp_data = [];
 end
