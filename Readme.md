@@ -27,7 +27,6 @@ Default options are defined in the `fn_set_options` function.
     - Converts batches of .mat files to a CSV format.
 
 # BristolFE v2 - Paul Wilcox
-=======================
 
 This repository contains a number of Matlab functions and example scripts for performing basic Finite Element (FE) simulations, in particular explicit dynamic ones. Currently only 2D models are supported and the only element types are 3-noded triangular ones for elastic solids (CPE3), fluids (AC2D3), and  fluid-solid interface elements (ASI2D2).
 
@@ -39,8 +38,7 @@ The core FE code is in various functions in the BristolFE-v2/code/private folder
 
 Some example scripts are provided in the BristolFE-v2/examples. Most likely you will start with one of these and modify it according to your requirements.
 
-OVERVIEW
-========
+## OVERVIEW
 
 The entry point function is res = fn_BristolFE_v2(mod, matls, steps, fe_options). 
 
@@ -52,8 +50,7 @@ The requested results for the corresponding loading step are returned in the cel
 
 Most of the code in the example scripts is concerned with preparing mod, matls, and steps before fn_BristolFE_v2 is called and then displaying the outputs.
 
-EXAMPLES
-========
+## EXAMPLES
 
 In BristolFE-v2/examples you will find the following scripts which provide simple examples how to set up different features in models:
     1. fluid_example.m - simulate pressure waves in a fluid domain
