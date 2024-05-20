@@ -32,24 +32,13 @@ for i = 1:n_matls
         warning('OFF', 'BACKTRACE');
         warning('Unknown material field (not rho, D, rayleigh_coefs, col, or el_typ)')
     end
-        
-    % %Scale values according to scale of model
-    % if isfield(matls(i), 'rho')
-    %     matls(i).rho = matls(i).rho / op.scale_units^3;
-    % end
-    % if isfield(matls(i), 'D')
-    %     matls(i).D = matls(i).D / op.scale_units^2;
-    % end
-    % if isfield(matls(i), 'rayleigh_coefs')
-    %     matls(i).rayleigh_coefs = matls(i).rayleigh_coefs / op.scale_units;
-    % end
 end
 
 
 %Return accoustic impedances
 Z = zeros(n_matls, 1);
 for i = 1:n_matls
-    [max_vel_i, min_vel_i] = fn_estimate_max_min_vels(matls(i), op.scale_units);
+    [max_vel_i, min_vel_i] = fn_estimate_max_min_vels(matls(i));
     avg_vel = (max_vel_i + min_vel_i)/2;
     Z(i) = matls(i).rho * avg_vel;
 end

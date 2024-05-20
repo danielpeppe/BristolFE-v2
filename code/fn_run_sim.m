@@ -1,36 +1,18 @@
-function [res, steps, op] = run_sim(op, op_output, varargin)
-%% REDEFINE OPTIONS
+function [res, steps, op, mod, matls] = fn_run_sim(op, op_output, varargin)
 
 if ~isempty(varargin)
     fe_options = varargin{1}{1};
     anim_options = varargin{1}{2};
-    exp_data = varargin{1}{3};
-else
-    fe_options.field_output_every_n_frames = inf;
-    anim_options.repeat_n_times = 0;
+    display_options = varargin{1}{3};
 end
-
-%Paul Options
-centre_freq = op.centre_freq;
-no_cycles = op.no_cycles;
-max_time = op.max_time;
-%Options
-geometry = op_output.geometry;
-justgeometry = op_output.justgeometry;
-run_fea = op_output.run_fea;
-plot_sim_data = op_output.plot_sim_data;
-plot_exp_data = op_output.plot_exp_data;
-animate = op_output.animate;
-if animate && (fe_options.field_output_every_n_frames == inf || anim_options.repeat_n_times == 0)
-    error('fe_options.field_output_every_n_frames == inf, or, anim_options.repeat_n_times == 0, so animation will NOT be shown')
-elseif ~animate
-    fe_options.field_output_every_n_frames = inf;
+if op_output.animate && (fe_options.field_output_every_n_frames == inf || anim_options.repeat_n_times == 0)
+    error('op_output.animate is enabled but fe_options.field_output_every_n_frames == inf, or, anim_options.repeat_n_times == 0. So animation will not be shown.')
 end
 
 %% DEFINE SPECIMEN MATERIALS
 
 %Define rayleigh coefs
-rayleigh_coefs = [0 1/(2*pi*centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
+rayleigh_coefs = [0 1/(2*pi*op.centre_freq*(op.rayleigh_quality_factor * 1e4))]; %[alpha beta]
 
 %ply90
 E_fib = 161e9; G_fib = 5.17e9; v_fib = 0.32; E_t = 11.38e9; G_t = 3.98e9; v_t = 0.436;
@@ -65,33 +47,16 @@ mat.water.rho = 1000 * op.water_rho_multiplier;
 mat.water.D = 1500^2 * 1000 * op.water_D_multiplier;
 mat.water.col = hsv2rgb([0.6,0.5,0.8]);
 mat.water.el_typ = 'AC2D3'; %AC2D3 must be the element type for a fluid
-% %solid/fake water
-% if op.solidwater
-%     mat.solidwater.rho = 1000 * op.solidwater_rho_multiplier;
-%     mat.solidwater.D = op.solidwater_D_multiplier * fn_isotropic_plane_strain_stiffness_matrix(4e9, 0.3);
-%     mat.solidwater.col = hsv2rgb([0.6,0.75,0.8]);
-%     mat.solidwater.el_typ = 'CPE3';
-% end
-% %Steel
-% mat.steel.rho = 8900; %8900
-% mat.steel.D = fn_isotropic_plane_strain_stiffness_matrix(210e9, 0.3); 
-% mat.steel.col = hsv2rgb([3/4,0.5,0.80]);
-% mat.steel.el_typ = 'CPE3';
 
 %Define matls struct from mat
 [matls, Z, R_coefs] = fn_get_matls_struct(op, mat);
 
 %% DEFINE SHAPE OF MODEL
 
-%Hard coded exp data constants
-exp_data_array_el_xc_end = 0.0190500;
-exp_data_array_el_xc_start = -0.0190500;
-exp_data_num_els = 128;
-
 %Define aperture size relative to exp probe
-probe_width = op.scale_units * (exp_data_array_el_xc_end - exp_data_array_el_xc_start);
-aperture_width = double(probe_width * op.aperture_n_els/exp_data_num_els);
-aperture_width_8 = double(probe_width * 8/exp_data_num_els);
+probe_width = 0.0381;
+aperture_width = double(probe_width * op.aperture_n_els/op.aperture_total_n_els);
+aperture_width_8 = double(probe_width * 8/op.aperture_total_n_els);
 %Define model parameters
 water_brdy_thickness = op.water_bdry_thickness_perc * op.specimen_size;
 if aperture_width > aperture_width_8
@@ -131,32 +96,24 @@ abs_bdry_pts = [
 %% DEFINE MESH
 
 %Work out element size (slightly different from actual element size)
-el_size = fn_get_suitable_el_size(matls, centre_freq, op.els_per_wavelength, op.scale_units);
-% el_size = 1.5261e-05; %OVERRIDE ELEMENT SIZE FOR CONSISTENCY
-op.el_size = el_size; %SAVE ELEMENT SIZE
+el_size = fn_get_suitable_el_size(matls, op.centre_freq, op.els_per_wavelength);
+%Save element size
+op.el_size = el_size;
 %Create the nodes and elements of the mesh
 mod = fn_isometric_structured_mesh(model_bdry_pts, el_size);
 
 %% PRINT IMPORTANT INFORMATION
 
 % fprintf('el_size: %.2f um\n', el_size * 1e6)
-% [max_vel, min_vel] = fn_estimate_max_min_vels(matls, op.scale_units);
+% [max_vel, min_vel] = fn_estimate_max_min_vels(matls);
 % avg_vel = (min_vel + max_vel) / 2;
-% wavelengths = [min_vel max_vel avg_vel] / op.centre_freq * 1e6; %[um]
+% wavelengths = [min_vel max_vel avg_vel] / op.op.centre_freq * 1e6; %[um]
 % fprintf('US wavelengths: min: %.2f, max: %.2f, avg: %.2f um\n', wavelengths)
 
 %% SET MATERIALS IN MESH
 
 %First set all elements to water
 mod.el_mat_i(:) = fn_matl_i(matls,"water");
-%Set upper elements to solid water if enabled
-if op.solidwater
-    solidwater_bdry = [0,            model_height/2
-                       model_width,  model_height/2
-                       model_width,  model_height
-                       0,            model_height];
-    mod = fn_set_els_inside_bdry_to_mat(mod, solidwater_bdry, fn_matl_i(matls,"solidwater"));
-end
 %Set specimen materials
 if op.solid_specimen
     mod = fn_set_els_inside_bdry_to_mat(mod, specimen_brdy_pts, fn_matl_i(matls, op.layer1));
@@ -169,12 +126,9 @@ elseif op.composite_specimen
     end
 
     %Add porosity
-    %   Doesn't support intRAply layers or 2 types of intERply layers
-    %   Doesn't support solid specimens (because comp is needed)
+    %Does not support solid specimens (because comp is needed)
     [mod, matls, op] = fn_add_porosity_v4(mod, op, matls, comp);
 end
-
-
 
 %Add interface elements
 mod = fn_add_fluid_solid_interface_els(mod, matls);
@@ -226,10 +180,10 @@ steps{1}.load.frc_dfs = ones(size(steps{1}.load.frc_nds)) * op.src_dir;
 %Also provide the time signal for the loading (if this is a vector, it will
 %be applied at all frc_nds/frc_dfs simultaneously; alternatively it can be a matrix
 %of different time signals for each frc_nds/frc_dfs
-time_step = fn_get_suitable_time_step(matls, el_size, op.scale_units, op.time_step_safety_factor);
+time_step = fn_get_suitable_time_step(matls, el_size, op.time_step_safety_factor);
 % time_step = 4.5002e-10; %OVERRISE TIMESTEP FOR CONSISTENCY
-steps{1}.load.time = 0: time_step:  max_time;
-steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, centre_freq, no_cycles);
+steps{1}.load.time = 0: time_step:  op.max_time;
+steps{1}.load.frcs = fn_gaussian_pulse(steps{1}.load.time, op.centre_freq, op.no_cycles);
 
 %Also record displacement history at same points (NB there is no reason why
 %these have to be same as forcing points)
@@ -243,78 +197,26 @@ else
 end
 steps{1}.mon.dfs = ones(size(steps{1}.mon.nds)) * op.src_dir;
 
-%% DISPLAY MODEL
+%% DISPLAY GEOMETRY
 
-%Display options
-% display_options.interface_el_col = hsv2rgb([0.50,.75,.60]);
-display_options.draw_elements = 0;
 display_options.node_sets_to_plot(1).nd = steps{1}.load.frc_nds;
-display_options.node_sets_to_plot(1).col = 'r.';
 display_options.node_sets_to_plot(2).nd = steps{1}.mon.nds;
-display_options.node_sets_to_plot(2).col = 'b.';
 %Plot geometry
-if justgeometry
-    fig1 = figure; 
-    h_patch = fn_show_geometry(mod, matls, display_options);
-    %print(fig1,'-dpng',['-r','1000'], "model-geom-porosity.png")
-    res{1} = {0};
-    return
-elseif geometry
+if op_output.geometry
     figure; 
     h_patch = fn_show_geometry(mod, matls, display_options);
 end
 
 %% RUN THE MODEL
 
-if run_fea
+if op_output.run_fea
     %Following relate to how absorbing regions are created by adding damping
     %matrix and reducing stiffness matrix to try and preserve acoustic impedance
     fe_options.damping_power_law = 3;
-    fe_options.max_damping = 3.1415e+07 / op.scale_units;
+    fe_options.max_damping = 3.1415e+07;
     fe_options.max_stiffness_reduction = 0.01;
     %Run model
     res = fn_BristolFE_v2(mod, matls, steps, fe_options);
-    res_sum_dsps = sum(res{1}.dsps); %tmp for readability
-end
-
-
-%% SHOW THE RESULTS
-
-%Plot sim results
-if plot_sim_data
-    %Show the history output as a function of time - here we just sum over all 
-    %the nodes where displacments were recorded
-    fig2 = figure;
-
-    % translate_time = 1.1964e-05; %Start of exp response
-    % plot(steps{1}.load.time + translate_time * op.plot_scale_time, res_sum_dsps * op.plot_scale_dsps);
-    plot(steps{1}.load.time, res_sum_dsps * op.plot_scale_dsps);
-    xlabel('Time (s)')
-    ylabel('Magnitude (-)')
-
-end
-%Plot experimental data on top
-if plot_exp_data
-    hold on
-    load("g4-s8_x-8000_z0_025.mat","exp_data");
-    %Get time data for aperture
-    aperture = 1:op.aperture_n_els;
-    aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
-    aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
-    %Scale dsp data
-    scale_dsps = max(abs(res_sum_dsps))/max(abs(aperture_dsp_data)); %Scale exp response to match sim response
-    translate_time = 1.1964e-05; %Start of exp response
-    %Plot
-    plot(exp_data.time - translate_time, aperture_dsp_data * scale_dsps, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
-    hold off
-end
-
-%animate result
-if animate
-    figure;
-    h_patch = fn_show_geometry(mod, matls, display_options);
-    anim_options.norm_val = abs(median(res_sum_dsps)); %must be positive
-    fn_run_animation(h_patch, res{1}.fld, anim_options);
 end
 
 end

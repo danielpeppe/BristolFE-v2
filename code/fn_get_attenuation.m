@@ -4,11 +4,10 @@ function op_save = fn_get_attenuation(op_save, res, i)
 
 %Iterate over sim results
 res_sum = sum(res{1,i}{1}.dsps); %tmp for readability
-%Scale sim data
-res_norm = res_sum/max(abs(res_sum)); %Scale exp response to match sim response
 %Plot final results
-n_pts_half = round(length(res_norm)/2);
-op_save{1,i}.attenuation = 1/max(res_norm(n_pts_half:end));
+n_pts_half = round(length(res_sum)/2);
+amplitude_drop = max(abs(res_sum))/max(res_sum(n_pts_half:end));
+op_save{1,i}.attenuation = 20*log10(amplitude_drop) / (2*op_save{i}.specimen_size*1000);
 
 end
 

@@ -1,4 +1,4 @@
-function fn_plot_batch(op_save, res, steps, exp_data, save_figure, batch_path)
+function fn_plot_batch(op_save, res, steps, batch_path, save_figure)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -30,23 +30,9 @@ for i = 1:length(res)
     hold on
 end
 
-% %Plot experimental data on top
-% hold on
-% %Get exp time data for aperture (needed for scaling)
-% aperture = 1:op.aperture_n_els;
-% aperture_data = ismember(exp_data.tx, aperture) & ismember(exp_data.rx, aperture);
-% aperture_dsp_data = sum(exp_data.time_data(:, aperture_data), 2);
-% aperture_dsp_data_norm = aperture_dsp_data/max(abs(aperture_dsp_data));
-% translate_time = 1.194e-05; %Start of exp response
-% %Plot
-% exp_time_translated = exp_data.time - translate_time;
-% exp_i = find(exp_time_translated > 0 & exp_time_translated < op.max_time);
-% correction = 0.75; %exp displacements need to be reduced slightly because exp initial signal need to be smaller than sim's
-% plot(exp_time_translated(exp_i), aperture_dsp_data_norm(exp_i) * correction, 'Color', hsv2rgb([.95,1,1]),'LineStyle',':','DisplayName','target');
-% hold off
-
 xlabel('Time (s)')
 ylabel('Magnitude (-)')
+
 xlim([0, op.max_time])
 ylim([-1,1]/3)
 xcorr = 2; ycorr = 2;

@@ -1,13 +1,19 @@
-function varargout = fn_set_options(op, varargin)
+function [op, op_output, default_op] = fn_set_options(op, varargin)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
 if ~isempty(varargin)
     op_output = varargin{1};
 else
-    op_output = struct();
+    op_output.geometry = 0;
+    op_output.run_fea = 1;
+    op_output.plot_sim_data = 0;
+    op_output.plot_exp_data = 0;
+    op_output.animate = 0;
 end
 
+%Experimental data
+default_op.load_exp = 0;
 %Model
 default_op.abs_bdry_thickness_perc = 0.2;
 default_op.model_width_multiplier = 1.5;
@@ -20,12 +26,12 @@ default_op.no_cycles = 3;
 default_op.max_time = 3.5e-6;
 default_op.src_matl = "solid"; %solid, water, solid_horizontal
 default_op.src_dir = 2;
+default_op.aperture_total_n_els = 128;
 default_op.aperture_n_els = 16; %number of elements
 default_op.separate_transmitter = 0; %by 1 element
 default_op.separate_receiver = 0;
 %Specimen
 default_op.specimen_size = 4e-3; %[m]
-default_op.scale_units = 1; %1000 = using mm
 default_op.solid_specimen = 0;
 default_op.composite_specimen = 1;
 %Composite structure
@@ -76,18 +82,11 @@ default_op.upper_water_present = 0;
 default_op.lower_water_present = 1;
 default_op.water_rho_multiplier = 1.5;
 default_op.water_D_multiplier = 1.5;
-%Solid water options
-default_op.solidwater = 0;
-default_op.solidwater_rho_multiplier = 1;
-default_op.solidwater_D_multiplier = 1;
 %Location of transducer in water
 default_op.water_interface_perc = 0; %0-1 (1 separates transducer from specimen by water_boundary_thickness) (if you want src in material, set to 0 and manually edit src_offset)
 default_op.water_interface_single = 0; %0 or 1 (1 separates transducer from specimen by 1 element)
 %Parameters for multiple simulations
 default_op.params = [];
-%Output scaling
-default_op.plot_scale_dsps = 1;
-default_op.plot_scale_time = 1;
 %Testing horizontal speed
 default_op.test_horizontal_speed = 0;
 %Porosity
@@ -111,11 +110,9 @@ default_op.porosity_damping_tuner = 3.2;
 %   Output
 default_op.porosity_plot_dists = 0;
 %Data generation options
-default_op.data_gen = 0;
-default_op.data_gen_batch_size = 0;
 default_op.data_gen_vars = {};
+default_op.data_gen_save_data = 0;
 default_op.porosity_range = [0 3];
-default_op.data_gen_load = 0;
 
 %% SET DEFAULT OPTIONS
 
@@ -128,6 +125,10 @@ fn_print_default_options(op, default_op)
 %turn off warning backtrace
 warning("OFF", "BACKTRACE");
 
+%Experimental data options
+if ~op.load_exp && op_output.plot_exp_data
+    error("op.load_exp is not enabled so op_output.plot_exp_data is not possible")
+end
 %Resolution options
 if op.els_per_wavelength ~= 15
     warning("els_per_wavelength may be overrided in run_sim, please check!")
@@ -164,19 +165,12 @@ end
 if (~op.lower_water_present && ~op.upper_water_present) && op.water_bdry_thickness_perc
     error("Option Error: set op.water_bdry_thickness_perc = 0")
 end
-%Solid water options
-if op.solidwater && ~op.upper_water_present
-    error("Option Error: set op.upper_water_present = 1 when using solidwater")
-end
-if (op.water_interface_perc || op.water_interface_single) && ~(strcmpi(op.src_matl,"water")) && ~op.solidwater
-    error("Option Error: set op.src_matl = ""water"" when using op.water_interface_perc or op.water_interface_single")
-end
 %Source options
-if strcmpi(op.src_matl,"water")
+if strcmpi(op.src_matl, "water")
     op.src_dir = 4;
-elseif strcmpi(op.src_matl,"solid")
+elseif strcmpi(op.src_matl, "solid")
     op.src_dir = 2;
-elseif strcmpi(op.src_matl,"solid_horizontal")
+elseif strcmpi(op.src_matl, "solid_horizontal")
     op.src_dir = 1;
 else
     error("Option error: set op.src_matl to water, solid, or solid_horizontal")
@@ -194,10 +188,6 @@ end
 if op.porosity == 1 && ~(op.porosity_use_void || op.porosity_use_density)
     error("Option error: porosity material needs to be defined or porosity needs to be turned off")
 end
-%Data gen options
-if xor(op.data_gen, op.data_gen_batch_size)
-    error("Option error: set data_gen_batch_size correctly")
-end
 
 %% TESTING HORIZONTAL SPEED
 
@@ -214,38 +204,14 @@ if op.test_horizontal_speed
     op.max_time = 2 * 3.5e-6;
 end
 
-%% VALIDATE OUTPUT
+%% OUTPUT OPTIONS
 
-if isempty(fieldnames(op_output))
-    %Disable output
-    op_output.justgeometry = 0;
-    op_output.geometry = 0;
-    op_output.run_fea = 1;
-    op_output.plot_sim_data = 0;
-    op_output.plot_exp_data = 0;
-    op_output.animate = 0;
-elseif isempty(op.params)
-    op_output.plot_sim_data = 1;
-    op_output.plot_exp_data = 0;
-else
-    op_output.justgeometry = 0;
-    op_output.animate = 0;
-end
-if op_output.justgeometry
-    fprintf("Output option enabled: JUSTGEOMETRY\n")
-end
 if op_output.geometry
     fprintf("Output option enabled: GEOMETRY\n")
 end
 if op_output.animate
     fprintf("Output option enabled: ANIMATE\n")
 end
-
-%% RETURN VARARGOUT
-
-varargout{1} = op;
-varargout{2} = op_output;
-varargout{3} = default_op;
 
 end
 
