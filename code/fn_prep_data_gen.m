@@ -15,7 +15,7 @@ for i = 1:length(op.data_gen_vars)
 
     if strcmp(var_type, 'norm')
         mu = var_default;
-        sigma = var_default*var_val/4;
+        sigma = var_default*var_val;
         op.(var_name) = mu + sigma*randn;
     
     elseif strcmp(var_type, 'lin')
